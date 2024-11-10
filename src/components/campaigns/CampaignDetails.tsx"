@@ -1,0 +1,24 @@
+<TabsContent value="overview">
+                <div className="space-y-6">
+                  <CampaignMetrics campaign={campaign} />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="candidates">
+                <CampaignCandidates
+                  candidates={campaign.candidates}
+                  onStatusChange={handleCandidateStatusChange}
+                  loading={loading}
+                />
+              </TabsContent>
+
+              <TabsContent value="workflow">
+                <CampaignWorkflowSection campaign={campaign} />
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

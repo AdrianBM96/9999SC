@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Styles */
+.sidebar-tooltip {
+  @apply invisible opacity-0 absolute left-16 transform -translate-y-1/2 bg-gray-900 text-white px-3 py-2 rounded-lg whitespace-nowrap transition-all duration-200;
+}
+
+.group:hover .sidebar-tooltip {
+  @apply visible opacity-100;
+}
+
+/* Search Bar Styles */
+.search-bar {
+  @apply bg-white rounded-lg px-6 py-4;
+}
+
+.search-bar-input {
+  @apply w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500;
+}
+
+.filter-button {
+  @apply flex items-center px-4 py-3 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium;
+}
+
+.new-button {
+  @apply flex items-center px-4 py-3 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700;
+}
+
+/* Stats Card Styles */
+.stats-card {
+  @apply bg-white rounded-lg p-4 border border-gray-100;
+}
+
+.stats-value {
+  @apply text-2xl font-semibold text-gray-900;
+}
+
+.stats-subtitle {
+  @apply text-sm text-amber-600 mt-1;
+}
+
+.stats-total {
+  @apply text-sm text-gray-500 ml-2;
+}
+
+/* Table Styles */
+.candidate-table {
+  @apply divide-y divide-gray-100;
+}
+
+.candidate-table-header {
+  @apply bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider px-6 py-3;
+}
+
+.candidate-row {
+  @apply hover:bg-gray-50;
+}
+
+.candidate-cell {
+  @apply px-6 py-4;
+}
+
+.status-badge {
+  @apply px-2 py-1 text-xs font-medium rounded-full;
+}
+
+.status-badge-pending {
+  @apply bg-amber-100 text-amber-800;
+}
+
+.action-button {
+  @apply text-sm text-blue-600 hover:text-blue-800;
+}

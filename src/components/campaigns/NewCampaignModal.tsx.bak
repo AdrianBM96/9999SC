@@ -1,0 +1,370 @@
+import React, { useState, useEffect } from 'react';
+import { X, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Campaign, Candidature, CampaignForm } from '../../types';
+import { 
+  generateKillerQuestions, 
+  generateConnectionMessage, 
+  generateReminderMessage 
+} from '../../services/ai/campaignAI';
+import { toast } from 'react-toastify';
+import { campaignService } from '../../services/campaignService';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../../firebase';
+import { BasicInfoStep } from './modal-steps/BasicInfoStep';
+import { MessagesStep } from './modal-steps/MessagesStep';
+import { FormStep } from './modal-steps/FormStep';
+
+interface NewCampaignModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onCampaignCreated: (campaign: Campaign) => void;
+}
+
+export function NewCampaignModal({ isOpen, onClose, onCampaignCreated }: NewCampaignModalProps) {
+  const [step, setStep] = useState(1);
+  const [candidatures, setCandidatures] = useState<Candidature[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    type: 'recruitment',
+    candidatureId: '',
+  });
+  const [messages, setMessages] = useState({
+    initial: '',
+    followup: '',
+  });
+  const [form, setForm] = useState<CampaignForm>({
+    id: '',
+    sections: [],
+    aiSuggestions: [],
+  });
+  useEffect(() => {
+    fetchCandidatures();
+  }, []);
+
+  const fetchCandidatures = async () => {
+    try {
+      const candidaturesCollection = collection(db, 'candidatures');
+      const candidaturesSnapshot = await getDocs(candidaturesCollection);
+      const candidaturesList = candidaturesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Candidature));
+      setCandidatures(candidaturesList);
+    } catch (error) {
+      console.error('Error fetching candidatures:', error);
+      toast.error('Error al cargar las candidaturas');
+    }
+  };
+
+  const generateAIContent = async () => {
+    setLoading(true);
+    try {
+      const selectedCandidature = candidatures.find(c => c.id === formData.candidatureId);
+      if (!selectedCandidature) throw new Error('Candidatura no encontrada');
+
+      const [questions, initialMsg, followupMsg] = await Promise.all([
+        generateKillerQuestions(selectedCandidature),
+        generateConnectionMessage(selectedCandidature),
+        generateReminderMessage(selectedCandidature)
+      ]);
+
+      setForm(prev => ({
+        ...prev,
+        aiSuggestions: questions,
+      }));
+
+      setMessages({
+        initial: initialMsg,
+        followup: followupMsg,
+      });
+
+      toast.success('Contenido generado con éxito');
+    } catch (error) {
+      console.error('Error generating AI content:', error);
+      toast.error('Error al generar el contenido con IA');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.name || !formData.candidatureId) {
+      toast.error('Por favor, complete todos los campos requeridos');
+      return;
+    }
+
+    try {
+      const newCampaign: Omit<Campaign, 'id'> = {
+        ...formData,
+        status: 'draft',
+        evaluationDate: new Date().toISOString(),
+        form,
+        messages: [
+          {
+            id: 'initial',
+            content: messages.initial,
+            order: 1,
+            type: 'initial',
+            aiGenerated: true,
+          },
+          {
+            id: 'followup',
+            content: messages.followup,
+            order: 2,
+            type: 'followup',
+            aiGenerated: true,
+          }
+        ],
+        metrics: {
+          sent: 0,
+          opened: 0,
+          responded: 0,
+          applied: 0,
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      const createdCampaign = await campaignService.createCampaign(newCampaign);
+      onCampaignCreated(createdCampaign);
+      toast.success('Campaña creada con éxito');
+    } catch (error) {
+      console.error('Error creating campaign:', error);
+      toast.error('Error al crear la campaña');
+    }
+  };
+
+  const renderStep = () => {
+  const renderStep = () => {
+    switch (step) {
+      case 1:
+        return (
+          <BasicInfoStep
+            formData={formData}
+            setFormData={setFormData}
+            candidatures={candidatures}
+          />
+        );
+      case 2:
+        return (
+          <MessagesStep
+            messages={messages}
+            setMessages={setMessages}
+            loading={loading}
+            onGenerateAI={generateAIContent}
+          />
+        );
+      case 3:
+        return (
+          <FormStep
+            loading={loading}
+            onGenerateAI={generateAIContent}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  if (!isOpen) return null;
+
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg w-full max-w-2xl">
+        <div className="flex justify-between items-center p-6 border-b border-gray-200">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Nueva Campaña</h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Paso {step} de 3: {
+                step === 1 ? 'Información básica' :
+                step === 2 ? 'Mensajes de campaña' :
+                'Formulario de aplicación'
+              }
+            </p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
+            <X size={20} />
+          </button>
+        </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="p-6">
+          {renderStep()}
+        </div>
+
+        <div className="flex justify-between items-center px-6 py-4 border-t border-gray-200 bg-gray-50">
+          <button
+            onClick={() => setStep(step - 1)}
+            disabled={step === 1}
+            className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 disabled:text-gray-400"
+          >
+            <ChevronLeft className="w-4 h-4 inline mr-1" />
+            Anterior
+          </button>
+          <button
+            onClick={step === 3 ? handleSubmit : () => setStep(step + 1)}
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+          >
+            {step === 3 ? 'Crear campaña' : (
+              <>
+                Siguiente
+                <ChevronRight className="w-4 h-4 inline ml-1" />
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="input-field"
+                rows={3}
+                placeholder="Describe el objetivo de la campaña..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tipo de campaña
+              </label>
+              <select
+                value={formData.type}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value as 'recruitment' | 'sourcing' })}
+                className="input-field"
+              >
+                <option value="recruitment">Reclutamiento</option>
+                <option value="sourcing">Sourcing</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Candidatura asociada
+
+              </label>
+              <select
+                value={formData.candidatureId}
+                onChange={(e) => setFormData({ ...formData, candidatureId: e.target.value })}
+                className="input-field"
+              >
+                <option value="">Selecciona una candidatura</option>
+                {candidatures.map(candidature => (
+                  <option key={candidature.id} value={candidature.id}>
+                    {candidature.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        );
+
+      case 2:
+        return (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Mensajes de la campaña</h3>
+              <button
+                onClick={generateAIContent}
+                disabled={loading}
+                className="flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100"
+              >
+                {loading ? (
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                )}
+                Generar con IA
+              </button>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Mensaje inicial de conexión
+              </label>
+              <textarea
+                value={messages.initial}
+                onChange={(e) => setMessages({ ...messages, initial: e.target.value })}
+                className="input-field"
+                rows={4}
+                placeholder="Este mensaje se enviará al conectar con el candidato..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Mensaje de seguimiento
+              </label>
+              <textarea
+                value={messages.followup}
+                onChange={(e) => setMessages({ ...messages, followup: e.target.value })}
+                className="input-field"
+                rows={4}
+                placeholder="Este mensaje se enviará si no hay respuesta..."
+              />
+            </div>
+          </div>
+        );
+
+      case 3:
+        return (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Formulario de aplicación</h3>
+              <button
+                onClick={generateAIContent}
+                disabled={loading}
+                className="flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100"
+              >
+                {loading ? (
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                )}
+                Generar preguntas con IA
+              </button>
+            </div>
+            {/* Form sections will be implemented in the FormEditor component */}
+        </div>
+        <div className="p-6">
+          {renderStep()}
+        </div>
+
+        <div className="flex justify-between items-center px-6 py-4 border-t border-gray-200 bg-gray-50">
+          <button
+            onClick={() => setStep(step - 1)}
+            disabled={step === 1}
+            className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 disabled:text-gray-400"
+          >
+            <ChevronLeft className="w-4 h-4 inline mr-1" />
+            Anterior
+          </button>
+          <button
+            onClick={step === 3 ? handleSubmit : () => setStep(step + 1)}
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+          >
+            {step === 3 ? 'Crear campaña' : (
+              <>
+                Siguiente
+                <ChevronRight className="w-4 h-4 inline ml-1" />
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
+
+
+
+
