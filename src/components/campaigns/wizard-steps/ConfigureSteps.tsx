@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { 
   Link2, MessageSquare, Bell, Calendar, Trash2, GripVertical,
-  Plus, Settings 
+  Plus, Settings, Mail, RefreshCw, CheckCircle, XCircle, ArrowRight,
+  ChevronUp, ChevronDown
 } from 'lucide-react';
 import { CampaignStep, CampaignStepType } from '../../../types/campaign';
 import { AddStepModal } from './AddStepModal';
@@ -19,62 +20,66 @@ const stepTypeIcons = {
   linkedin_connect: Link2,
   linkedin_message: MessageSquare,
   linkedin_reminder: Bell,
+  email_message: Mail,
   schedule_interview: Calendar,
+  status_change: RefreshCw,
+  wait_for_status: ArrowRight,
+  send_selection: CheckCircle,
+  send_rejection: XCircle,
+  form_submission: Settings,
+  review_required: Settings,
 };
 
 const stepTypeLabels = {
   linkedin_connect: 'Conexión + Mensaje de Bienvenida',
   linkedin_message: 'Mensaje LinkedIn',
   linkedin_reminder: 'Recordatorio',
+  email_message: 'Enviar Email',
   schedule_interview: 'Agendar Entrevista',
+  status_change: 'Cambiar Estado',
+  wait_for_status: 'Esperar Estado',
+  send_selection: 'Enviar Selección',
+  send_rejection: 'Enviar Rechazo',
+  form_submission: 'Formulario de Evaluación',
+  review_required: 'Revisión Manual Requerida',
 };
+
+const stepCategories = [
+  {
+    title: 'Atracción del Candidato',
+    description: 'Pasos para establecer el primer contacto y atraer candidatos',
+    types: ['linkedin_connect', 'linkedin_message', 'email_message']
+  },
+  {
+    title: 'Selección y Criba',
+    description: 'Evaluación inicial y filtrado de candidatos',
+    types: ['form_submission', 'review_required', 'status_change', 'wait_for_status']
+  },
+  {
+    title: 'Agenda de Entrevistas',
+    description: 'Coordinación y seguimiento de entrevistas',
+    types: ['schedule_interview', 'linkedin_reminder', 'email_message']
+  },
+  {
+    title: 'Contratación',
+    description: 'Pasos finales del proceso de selección',
+    types: ['send_selection', 'send_rejection', 'status_change']
+  }
+];
 
 export function ConfigureSteps({ steps, onStepsChange, onEditStep, onNext, onBack }: ConfigureStepsProps) {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [expandedSteps, setExpandedSteps] = useState<string[]>([]);
 
-  const handleDragEnd = (result: any) => {
-    if (!result.destination) return;
-
-    const items = Array.from(steps);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    const newIndex = result.destination.index;
-
-    // Prevent moving the connection step from first position
-    if (reorderedItem.type === 'linkedin_connect' && newIndex !== 0) {
-      return;
-    }
-
-    // Prevent moving the interview step from last position
-    if (reorderedItem.type === 'schedule_interview' && newIndex !== items.length) {
-      return;
-    }
-
-    // Prevent moving other steps to first or last position
-    if (reorderedItem.type !== 'linkedin_connect' && newIndex === 0) {
-      return;
-    }
-    if (reorderedItem.type !== 'schedule_interview' && newIndex === items.length) {
-      return;
-    }
-
-    items.splice(newIndex, 0, reorderedItem);
-
-    // Update order numbers
-    const updatedItems = items.map((item, index) => ({
-      ...item,
-      order: index + 1,
-    }));
-
-    onStepsChange(updatedItems);
+  const toggleStepExpansion = (stepId: string) => {
+    setExpandedSteps(prev => 
+      prev.includes(stepId) 
+        ? prev.filter(id => id !== stepId)
+        : [...prev, stepId]
+    );
   };
 
   const handleDeleteStep = (stepId: string) => {
-    const stepToDelete = steps.find(step => step.id === stepId);
-    // Prevent deleting connection or interview steps
-    if (stepToDelete?.type === 'linkedin_connect' || stepToDelete?.type === 'schedule_interview') {
-      return;
-    }
-
     const updatedSteps = steps
       .filter(step => step.id !== stepId)
       .map((step, index) => ({
@@ -85,156 +90,188 @@ export function ConfigureSteps({ steps, onStepsChange, onEditStep, onNext, onBac
   };
 
   const handleAddStep = (newStep: CampaignStep) => {
-    let updatedSteps;
-    if (newStep.type === 'linkedin_connect') {
-      // Add connection step at the beginning
-      updatedSteps = [newStep, ...steps];
-    } else if (newStep.type === 'schedule_interview') {
-      // Add interview step at the end
-      updatedSteps = [...steps, newStep];
-    } else {
-      // Add other steps before the interview step
-      const interviewStepIndex = steps.findIndex(step => step.type === 'schedule_interview');
-      if (interviewStepIndex === -1) {
-        updatedSteps = [...steps, newStep];
-      } else {
-        updatedSteps = [
-          ...steps.slice(0, interviewStepIndex),
-          newStep,
-          ...steps.slice(interviewStepIndex)
-        ];
-      }
-    }
-
-    // Update order numbers
-    updatedSteps = updatedSteps.map((step, index) => ({
+    const updatedSteps = [...steps, newStep].map((step, index) => ({
       ...step,
       order: index + 1,
     }));
-
     onStepsChange(updatedSteps);
   };
 
+  const handleDragEnd = (result: any) => {
+    if (!result.destination) return;
+
+    const items = Array.from(steps);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    // Update order numbers
+    const updatedItems = items.map((item, index) => ({
+      ...item,
+      order: index + 1,
+    }));
+
+    onStepsChange(updatedItems);
+  };
+
+  const renderStepConditions = (step: CampaignStep) => {
+    if (!step.conditions?.length) return null;
+
+    return (
+      <div className="mt-2 pl-4 border-l-2 border-gray-200">
+        {step.conditions.map((condition, index) => (
+          <div key={index} className="text-sm text-gray-600">
+            <p className="font-medium">Si:</p>
+            {condition.conditions.map((cond, i) => (
+              <p key={i} className="ml-2">
+                {cond.type === 'status' && `Estado ${cond.operator} ${cond.value}`}
+                {cond.type === 'form_score' && `Puntuación ${cond.operator} ${cond.value}`}
+                {cond.type === 'time_elapsed' && `Tiempo transcurrido ${cond.operator} ${cond.value} días`}
+              </p>
+            ))}
+            <p className="font-medium mt-1">Entonces:</p>
+            <p className="ml-2">{stepTypeLabels[condition.action.type as keyof typeof stepTypeLabels]}</p>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">Configura los pasos</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Arrastra para reordenar los pasos de tu campaña
-          </p>
-        </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Añadir paso
-        </button>
+    <div className="max-w-4xl mx-auto space-y-8">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 className="text-lg font-medium text-blue-900 mb-2">
+          Configuración del Proceso de Reclutamiento
+        </h3>
+        <p className="text-sm text-blue-700">
+          Configura los pasos automatizados para cada fase del proceso de reclutamiento.
+          Puedes añadir, reordenar y personalizar los pasos según tus necesidades.
+        </p>
       </div>
 
-      {showAddModal && (
-        <AddStepModal
-          onClose={() => setShowAddModal(false)}
-          onAdd={handleAddStep}
-        />
-      )}
-
       <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable droppableId="steps">
+        <Droppable droppableId="steps" type="STEP">
           {(provided) => (
-            <div
-              {...provided.droppableProps}
-              ref={provided.innerRef}
-              className="space-y-3"
+            <div 
+              {...provided.droppableProps} 
+              ref={provided.innerRef} 
+              className="space-y-6"
             >
-              {steps.map((step, index) => {
-                const Icon = stepTypeIcons[step.type as keyof typeof stepTypeIcons];
-                return (
-                  <Draggable key={step.id} draggableId={step.id} index={index}>
+              {steps.length === 0 ? (
+                <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                  <p className="text-gray-500">
+                    No hay pasos configurados. Añade pasos para comenzar.
+                  </p>
+                </div>
+              ) : (
+                steps.map((step, index) => (
+                  <Draggable key={step.id} draggableId={step.id} index={index} type="STEP">
                     {(provided) => (
                       <div
                         ref={provided.innerRef}
                         {...provided.draggableProps}
-                        className="flex items-center bg-white p-4 rounded-lg border border-gray-200 hover:shadow-sm transition-shadow group"
+                        className="bg-white rounded-lg border border-gray-200 shadow-sm"
                       >
-                        <div
-                          {...provided.dragHandleProps}
-                          className="text-gray-400 hover:text-gray-600 cursor-grab"
-                        >
-                          <GripVertical className="w-5 h-5" />
-                        </div>
-                        
-                        <div className="ml-4 flex-1">
+                        <div className="p-4">
                           <div className="flex items-center">
-                            <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                              <Icon className="w-4 h-4" />
+                            <div {...provided.dragHandleProps} className="mr-3">
+                              <GripVertical className="w-5 h-5 text-gray-400" />
                             </div>
-                            <div className="ml-3">
-                              <h4 className="text-sm font-medium text-gray-900">
-                                {stepTypeLabels[step.type as keyof typeof stepTypeLabels]}
-                              </h4>
-                              <p className="text-xs text-gray-500">
-                                {step.config.delay 
-                                  ? `Esperar ${step.config.delay} días`
-                                  : 'Ejecutar inmediatamente'}
-                              </p>
+                            <div className="flex-1">
+                              <div className="flex items-center">
+                                {React.createElement(stepTypeIcons[step.type as keyof typeof stepTypeIcons], {
+                                  className: "w-5 h-5 text-gray-500 mr-2"
+                                })}
+                                <span className="font-medium">{stepTypeLabels[step.type as keyof typeof stepTypeLabels]}</span>
+                              </div>
+                              {step.description && (
+                                <p className="mt-1 text-sm text-gray-500">{step.description}</p>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => onEditStep(step.id)}
+                                className="p-2 text-gray-400 hover:text-gray-500"
+                              >
+                                <Settings className="w-5 h-5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteStep(step.id)}
+                                className="p-2 text-gray-400 hover:text-red-500"
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </button>
+                              <button
+                                onClick={() => toggleStepExpansion(step.id)}
+                                className="p-2 text-gray-400 hover:text-gray-500"
+                              >
+                                {expandedSteps.includes(step.id) ? (
+                                  <ChevronUp className="w-5 h-5" />
+                                ) : (
+                                  <ChevronDown className="w-5 h-5" />
+                                )}
+                              </button>
                             </div>
                           </div>
-                        </div>
-
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => onEditStep(step.id)}
-                            className="p-1 text-gray-400 hover:text-gray-600"
-                          >
-                            <Settings className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteStep(step.id)}
-                            className="p-1 text-gray-400 hover:text-red-600"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
+                          {expandedSteps.includes(step.id) && (
+                            <div className="mt-4 pl-11">
+                              <div className="text-sm text-gray-500">
+                                {renderStepConditions(step)}
+                                {step.config.delay && (
+                                  <p className="text-sm text-gray-500 mt-2">
+                                    Esperar {step.config.delay} días antes de ejecutar
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
                   </Draggable>
-                );
-              })}
+                ))
+              )}
               {provided.placeholder}
             </div>
           )}
         </Droppable>
       </DragDropContext>
 
-      {steps.length === 0 && (
-        <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-          <p className="text-sm text-gray-500">
-            No hay pasos configurados. Añade un paso para comenzar.
-          </p>
-        </div>
-      )}
 
-      <div className="flex justify-between pt-6 border-t">
+      <div className="flex justify-between items-center">
         <button
-          onClick={onBack}
-          className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+          onClick={() => setShowAddModal(true)}
+          className="flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
         >
-          Volver
-        </button>
-        <button
-          onClick={onNext}
-          disabled={steps.length === 0}
-          className={`px-4 py-2 rounded-lg text-sm font-medium ${
-            steps.length > 0
-              ? 'bg-blue-600 text-white hover:bg-blue-700'
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-          }`}
-        >
-          Continuar
+          <Plus className="w-5 h-5 mr-2" />
+          Añadir paso
         </button>
       </div>
+
+      <div className="border-t pt-6 mt-8">
+        <div className="flex justify-between">
+          <button
+            onClick={onBack}
+            className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+          >
+            Anterior
+          </button>
+          <button
+            onClick={onNext}
+            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+            disabled={steps.length === 0}
+          >
+            Continuar
+          </button>
+        </div>
+      </div>
+
+      {showAddModal && (
+        <AddStepModal
+          onClose={() => setShowAddModal(false)}
+          onAdd={handleAddStep}
+          stepCategories={stepCategories}
+        />
+      )}
     </div>
   );
 }

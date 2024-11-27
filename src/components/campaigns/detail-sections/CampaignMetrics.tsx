@@ -10,25 +10,25 @@ export function CampaignMetrics({ campaign }: CampaignMetricsProps) {
   const metrics = [
     {
       name: 'Candidatos',
-      value: campaign.candidates.length,
+      value: campaign.candidates ? campaign.candidates.length : 0,
       icon: Users,
       color: 'text-blue-500'
     },
     {
       name: 'Formularios enviados',
-      value: campaign.candidates.filter(c => c.formSubmitted).length,
+      value: campaign.candidates ? campaign.candidates.filter(c => c.formSubmitted).length : 0,
       icon: FileCheck,
       color: 'text-green-500'
     },
     {
       name: 'Entrevistas agendadas',
-      value: campaign.candidates.filter(c => c.status === 'interview_scheduled').length,
+      value: campaign.candidates ? campaign.candidates.filter(c => c.status === 'interview_scheduled').length : 0,
       icon: Calendar,
       color: 'text-purple-500'
     },
     {
       name: 'Seleccionados',
-      value: campaign.candidates.filter(c => c.status === 'selected').length,
+      value: campaign.candidates ? campaign.candidates.filter(c => c.status === 'selected').length : 0,
       icon: CheckCircle,
       color: 'text-indigo-500'
     }
@@ -55,3 +55,4 @@ export function CampaignMetrics({ campaign }: CampaignMetricsProps) {
     </div>
   );
 }
+

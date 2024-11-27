@@ -1,6 +1,6 @@
 import React from 'react';
 import { Campaign, CampaignStep } from '../../../types/campaign';
-import { AlertCircle, MessageSquare, Calendar, CheckCircle2, XCircle } from 'lucide-react';
+import { AlertCircle, MessageSquare, Calendar, CheckCircle2, XCircle, FileText } from 'lucide-react';
 
 interface CampaignWorkflowSectionProps {
   campaign: Campaign;
@@ -10,7 +10,7 @@ const stepIcons: Record<string, React.ElementType> = {
   linkedin_connect: MessageSquare,
   linkedin_message: MessageSquare,
   linkedin_reminder: MessageSquare,
-  form_submission: FileCheck,
+  form_submission: FileText,
   review_required: AlertCircle,
   schedule_interview: Calendar,
   send_rejection: XCircle,
@@ -74,3 +74,4 @@ export function CampaignWorkflowSection({ campaign }: CampaignWorkflowSectionPro
     </div>
   );
 }
+
