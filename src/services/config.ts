@@ -1,6 +1,7 @@
 interface Config {
   openAiApiKey: string;
-  linkedinApiKey: string;
+  unipileToken: string;
+  unipileDsn: string;
   googleCalendarClientId: string;
   microsoftCalendarClientId: string;
 }
@@ -9,13 +10,46 @@ let config: Config | null = null;
 
 export function initConfig(configData: Config) {
   config = configData;
+  
+  // Store Unipile configuration in localStorage
+  if (configData.unipileToken) {
+    localStorage.setItem('unipile_token', configData.unipileToken);
+  }
+  if (configData.unipileDsn) {
+    localStorage.setItem('unipile_dsn', configData.unipileDsn);
+  }
 }
 
 export function getConfig(): Config {
   if (!config) {
-    throw new Error('Configuration not initialized');
+    // Initialize with stored values
+    config = {
+      openAiApiKey: localStorage.getItem('openai_api_key') || '',
+      unipileToken: localStorage.getItem('unipile_token') || '',
+      unipileDsn: localStorage.getItem('unipile_dsn') || '',
+      googleCalendarClientId: '',
+      microsoftCalendarClientId: ''
+    };
   }
   return config;
+}
+
+export function updateUnipileConfig(token: string, dsn: string) {
+  if (!config) {
+    config = {
+      openAiApiKey: localStorage.getItem('openai_api_key') || '',
+      unipileToken: token,
+      unipileDsn: dsn,
+      googleCalendarClientId: '',
+      microsoftCalendarClientId: ''
+    };
+  } else {
+    config.unipileToken = token;
+    config.unipileDsn = dsn;
+  }
+  
+  localStorage.setItem('unipile_token', token);
+  localStorage.setItem('unipile_dsn', dsn);
 }
 
 export async function validateIntegrations() {
@@ -26,13 +60,27 @@ export async function validateIntegrations() {
   };
 
   try {
-    // Validate LinkedIn integration
-    const linkedinResponse = await fetch('/api/linkedin/validate', {
-      headers: {
-        'Authorization': `Bearer ${config?.linkedinApiKey}`
+    const { unipileToken, unipileDsn } = getConfig();
+    
+    // Validate Unipile/LinkedIn integration
+    if (unipileToken && unipileDsn) {
+      try {
+        const response = await fetch(`https://${unipileDsn}/api/v1/accounts`, {
+          headers: {
+            'Authorization': `Bearer ${unipileToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const accounts = await response.json();
+          // Check if there's at least one LinkedIn account connected
+          results.linkedin = accounts.some((account: any) => account.provider === 'linkedin');
+        }
+      } catch (error) {
+        console.error('Error validating Unipile connection:', error);
       }
-    });
-    results.linkedin = linkedinResponse.ok;
+    }
 
     // Validate Google Calendar integration
     const googleResponse = await fetch('/api/google/calendar/validate', {
