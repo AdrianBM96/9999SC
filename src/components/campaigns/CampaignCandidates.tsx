@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { CampaignCandidate, CandidateStatus } from '../../types/campaign';
-import { User, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
-import { processCVWithAI } from '../../services/cv-processing';
+import { CampaignCandidate, CandidateStatus, InterviewSchedulingData } from '../../types/campaign';
+import { User, Clock, AlertCircle } from 'lucide-react';
+import { RecruiterOptionsModal } from './RecruiterOptionsModal';
 
 interface CampaignCandidatesProps {
   candidates: CampaignCandidate[];
   onStatusChange: (candidateId: string, newStatus: CandidateStatus, note?: string) => void;
+  onSelectCandidate: (candidateId: string | null) => void;
+  selectedCandidateId: string | null;
+  loading: boolean;
 }
 
 const statusColors = {
@@ -30,49 +33,152 @@ const statusLabels = {
   withdrawn: 'Retirado',
 };
 
-const nextPossibleStatuses: Record<CandidateStatus, CandidateStatus[]> = {
-  new: ['form_submitted', 'withdrawn'],
-  form_submitted: ['under_review', 'rejected', 'withdrawn'],
-  under_review: ['interview_scheduled', 'rejected', 'withdrawn'],
-  interview_scheduled: ['interview_completed', 'withdrawn'],
-  interview_completed: ['selected', 'rejected', 'withdrawn'],
-  selected: [],
-  rejected: [],
-  withdrawn: [],
-};
+function TaskIndicators({ candidate }: { candidate: CampaignCandidate }) {
+  interface Task {
+    text: string;
+    priority: 'high' | 'medium' | 'low';
+    type: 'cv' | 'form' | 'interview' | 'decision';
+  }
 
-export function CampaignCandidates({ candidates, onStatusChange }: CampaignCandidatesProps) {
+  const pendingTasks: Task[] = [];
+  
+  // CV Review - High priority if it's new and unreviewed
+  if (candidate.cvFile && !candidate.cvReviewed) {
+    pendingTasks.push({
+      text: 'CV por revisar',
+      priority: candidate.status === 'new' ? 'high' : 'medium',
+      type: 'cv'
+    });
+  }
+
+  // Form Evaluation - High priority if submitted and not evaluated
+  if (candidate.formSubmitted && !candidate.formEvaluated) {
+    pendingTasks.push({
+      text: 'Formulario por evaluar',
+      priority: 'high',
+      type: 'form'
+    });
+  }
+
+  // Interview Evaluation - High priority if completed and not evaluated
+  if (candidate.status === 'interview_completed' && !candidate.interviewEvaluated) {
+    pendingTasks.push({
+      text: 'Entrevista por evaluar',
+      priority: 'high',
+      type: 'interview'
+    });
+  }
+
+  // Final Decision - High priority if all evaluations are complete
+  if (candidate.status === 'interview_completed' && 
+      candidate.interviewEvaluated && 
+      !candidate.finalDecisionMade) {
+    pendingTasks.push({
+      text: 'Decisión final pendiente',
+      priority: 'high',
+      type: 'decision'
+    });
+  }
+
+  // Suggest interview if form score is high
+  if (candidate.formEvaluated && 
+      candidate.formScore && 
+      candidate.formScore >= 7 && 
+      !['interview_scheduled', 'interview_completed', 'selected', 'rejected'].includes(candidate.status)) {
+    pendingTasks.push({
+      text: 'Programar entrevista (score alto)',
+      priority: 'medium',
+      type: 'interview'
+    });
+  }
+
+  if (pendingTasks.length === 0) {
+    return null;
+  }
+
+  // Sort tasks by priority
+  const sortedTasks = pendingTasks.sort((a, b) => {
+    const priorityOrder = { high: 0, medium: 1, low: 2 };
+    return priorityOrder[a.priority] - priorityOrder[b.priority];
+  });
+
+  const priorityColors = {
+    high: 'text-red-600 bg-red-50',
+    medium: 'text-yellow-600 bg-yellow-50',
+    low: 'text-blue-600 bg-blue-50'
+  };
+
+  return (
+    <div className="mt-1 space-y-1">
+      {sortedTasks.map((task, index) => (
+        <div 
+          key={index} 
+          className={`flex items-center space-x-2 px-2 py-1 rounded-md ${priorityColors[task.priority]}`}
+        >
+          <AlertCircle className={`w-4 h-4 ${
+            task.priority === 'high' ? 'text-red-500' :
+            task.priority === 'medium' ? 'text-yellow-500' : 'text-blue-500'
+          }`} />
+          <span className="text-sm">
+            {task.text}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function CampaignCandidates({ 
+  candidates, 
+  onStatusChange,
+  onSelectCandidate,
+  selectedCandidateId,
+  loading 
+}: CampaignCandidatesProps) {
   const [selectedCandidate, setSelectedCandidate] = useState<CampaignCandidate | null>(null);
-  const [note, setNote] = useState('');
-  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [processing, setProcessing] = useState(false);
 
-  const handleStatusChange = async (newStatus: CandidateStatus) => {
-    if (!selectedCandidate) return;
-    
+  const handleStatusChange = async (candidateId: string, newStatus: CandidateStatus, note?: string) => {
     try {
       setProcessing(true);
-      
-      // If the status is changing to form_submitted, process the CV
-      if (newStatus === 'form_submitted' && selectedCandidate.cvFile) {
-        await processCVWithAI(
-          selectedCandidate.id,
-          selectedCandidate.cvFile.text,
-          selectedCandidate.linkedinData
-        );
-      }
-
-      await onStatusChange(selectedCandidate.id, newStatus, note);
-      
-      setShowStatusModal(false);
-      setNote('');
+      await onStatusChange(candidateId, newStatus, note);
+      setShowOptionsModal(false);
       setSelectedCandidate(null);
     } catch (error) {
       console.error('Error processing candidate status change:', error);
-      // You might want to show an error notification here
     } finally {
       setProcessing(false);
     }
+  };
+
+  const handleScheduleInterview = async (data: InterviewSchedulingData) => {
+    try {
+      setProcessing(true);
+      // TODO: Implement actual calendar integration
+      console.log('Scheduling interview with data:', data);
+      
+      // Update candidate status to interview_scheduled
+      await onStatusChange(
+        selectedCandidate!.id, 
+        'interview_scheduled',
+        `Entrevista programada para ${new Date(data.date).toLocaleString()}`
+      );
+    } catch (error) {
+      console.error('Error scheduling interview:', error);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleSendEmail = () => {
+    // TODO: Implement email sending
+    console.log('Send email');
+  };
+
+  const handleSendMessage = () => {
+    // TODO: Implement message sending
+    console.log('Send message');
   };
 
   return (
@@ -106,7 +212,11 @@ export function CampaignCandidates({ candidates, onStatusChange }: CampaignCandi
           </thead>
           <tbody className="divide-y divide-gray-200 bg-white">
             {candidates.map((candidate) => (
-              <tr key={candidate.id}>
+              <tr 
+                key={candidate.id}
+                className={`${selectedCandidateId === candidate.id ? 'bg-blue-50' : ''} hover:bg-gray-50 cursor-pointer`}
+                onClick={() => onSelectCandidate(candidate.id)}
+              >
                 <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm">
                   <div className="flex items-center">
                     <div className="h-10 w-10 flex-shrink-0">
@@ -115,9 +225,22 @@ export function CampaignCandidates({ candidates, onStatusChange }: CampaignCandi
                       </div>
                     </div>
                     <div className="ml-4">
-                      <div className="font-medium text-gray-900">{candidate.candidateId}</div>
-                      {candidate.formScore && (
+                      <div className="font-medium text-gray-900">{candidate.name || candidate.candidateId}</div>
+                      <div className="text-sm text-gray-500">{candidate.email}</div>
+                      {candidate.formScore !== undefined && (
                         <div className="text-gray-500">Score: {candidate.formScore}</div>
+                      )}
+                      <TaskIndicators candidate={candidate} />
+                      {candidate.linkedinData?.profile && (
+                        <a 
+                          href={candidate.linkedinData.profile}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 hover:text-blue-800"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Ver perfil de LinkedIn
+                        </a>
                       )}
                     </div>
                   </div>
@@ -142,16 +265,17 @@ export function CampaignCandidates({ candidates, onStatusChange }: CampaignCandi
                 </td>
                 <td className="whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium">
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setSelectedCandidate(candidate);
-                      setShowStatusModal(true);
+                      setShowOptionsModal(true);
                     }}
                     className="text-blue-600 hover:text-blue-900"
-                    disabled={processing}
+                    disabled={loading || processing}
                   >
-                    {processing && candidate.id === selectedCandidate?.id 
+                    {(loading || processing) && candidate.id === selectedCandidate?.id 
                       ? 'Procesando...' 
-                      : 'Cambiar estado'}
+                      : 'Opciones'}
                   </button>
                 </td>
               </tr>
@@ -160,62 +284,18 @@ export function CampaignCandidates({ candidates, onStatusChange }: CampaignCandi
         </table>
       </div>
 
-      {showStatusModal && selectedCandidate && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              Cambiar estado del candidato
-            </h3>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-2">
-                {nextPossibleStatuses[selectedCandidate.status].map((status) => (
-                  <button
-                    key={status}
-                    onClick={() => handleStatusChange(status)}
-                    disabled={processing}
-                    className={`p-3 rounded-lg border text-sm font-medium flex items-center justify-center space-x-2 ${
-                      status === 'rejected'
-                        ? 'border-red-200 text-red-700 hover:bg-red-50'
-                        : status === 'selected'
-                        ? 'border-green-200 text-green-700 hover:bg-green-50'
-                        : 'border-gray-200 text-gray-700 hover:bg-gray-50'
-                    } ${processing ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    {status === 'rejected' && <XCircle className="w-4 h-4" />}
-                    {status === 'selected' && <CheckCircle2 className="w-4 h-4" />}
-                    {status === 'withdrawn' && <AlertCircle className="w-4 h-4" />}
-                    <span>{statusLabels[status]}</span>
-                  </button>
-                ))}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nota (opcional)
-                </label>
-                <textarea
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Añade una nota sobre el cambio de estado..."
-                />
-              </div>
-              <div className="mt-6 flex justify-end space-x-3">
-                <button
-                  onClick={() => {
-                    setShowStatusModal(false);
-                    setNote('');
-                    setSelectedCandidate(null);
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
-                  disabled={processing}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      {showOptionsModal && selectedCandidate && (
+        <RecruiterOptionsModal
+          candidate={selectedCandidate}
+          onClose={() => {
+            setShowOptionsModal(false);
+            setSelectedCandidate(null);
+          }}
+          onStatusChange={handleStatusChange}
+          onScheduleInterview={handleScheduleInterview}
+          onSendEmail={handleSendEmail}
+          onSendMessage={handleSendMessage}
+        />
       )}
     </div>
   );

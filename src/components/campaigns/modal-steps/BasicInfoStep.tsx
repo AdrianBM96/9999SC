@@ -58,17 +58,40 @@ export function BasicInfoStep({ formData, setFormData, candidatures }: BasicInfo
         </label>
         <select
           value={formData.candidatureId}
-          onChange={(e) => setFormData({ ...formData, candidatureId: e.target.value })}
+          onChange={(e) => {
+            const selectedCandidature = candidatures.find(c => c.id === e.target.value);
+            setFormData({ 
+              ...formData, 
+              candidatureId: e.target.value,
+              department: selectedCandidature?.department
+            });
+          }}
           className="input-field"
         >
           <option value="">Selecciona una candidatura</option>
           {candidatures.map(candidature => (
             <option key={candidature.id} value={candidature.id}>
-              {candidature.title}
+              {candidature.title} {candidature.department?.name ? `- ${candidature.department.name}` : ''}
             </option>
           ))}
         </select>
+        {formData.candidatureId && (
+          <div className="mt-2 text-sm text-gray-600">
+            {(() => {
+              const selectedCandidature = candidatures.find(c => c.id === formData.candidatureId);
+              if (!selectedCandidature) return null;
+              return (
+                <p>
+                  <span className="font-medium">Departamento:</span> {
+                    selectedCandidature.department?.name || 'Sin departamento asignado'
+                  }
+                </p>
+              );
+            })()}
+          </div>
+        )}
       </div>
     </div>
   );
 }
+

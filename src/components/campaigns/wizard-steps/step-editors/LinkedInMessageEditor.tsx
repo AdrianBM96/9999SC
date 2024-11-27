@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { CampaignStep } from '../../../../types/campaign';
 import { Info } from 'lucide-react';
+import { CampaignStep, StepCondition, CandidateStatus } from '../../../../types/campaign';
+import { ConditionsEditor } from './ConditionsEditor';
 
 interface LinkedInMessageEditorProps {
   step: CampaignStep;
@@ -26,9 +27,21 @@ Si tienes alguna pregunta, no dudes en consultarme.
 ¡Saludos!
 {{recruiterName}}`;
 
+const statusOptions = [
+  { value: 'new', label: 'Nuevo' },
+  { value: 'form_submitted', label: 'Formulario enviado' },
+  { value: 'under_review', label: 'En revisión' },
+  { value: 'interview_scheduled', label: 'Entrevista programada' },
+  { value: 'interview_completed', label: 'Entrevista completada' },
+  { value: 'selected', label: 'Seleccionado' },
+  { value: 'rejected', label: 'Rechazado' },
+  { value: 'withdrawn', label: 'Retirado' }
+];
+
 export function LinkedInMessageEditor({ step, onSave }: LinkedInMessageEditorProps) {
   const [message, setMessage] = useState(step.config?.message || DEFAULT_MESSAGE);
   const [delay, setDelay] = useState(step.config?.delay || 1);
+  const [conditions, setConditions] = useState<StepCondition[]>(step.conditions || []);
 
   const handleSave = () => {
     onSave({
@@ -38,6 +51,7 @@ export function LinkedInMessageEditor({ step, onSave }: LinkedInMessageEditorPro
         message,
         delay,
       },
+      conditions
     });
   };
 
@@ -51,7 +65,6 @@ export function LinkedInMessageEditor({ step, onSave }: LinkedInMessageEditorPro
     
     setMessage(before + variable + after);
     
-    // Set cursor position after the inserted variable
     setTimeout(() => {
       textarea.selectionStart = start + variable.length;
       textarea.selectionEnd = start + variable.length;
@@ -66,7 +79,7 @@ export function LinkedInMessageEditor({ step, onSave }: LinkedInMessageEditorPro
         <div className="text-sm text-blue-700">
           <p className="font-medium mb-1">Variables disponibles</p>
           <p className="mb-2">
-            Puedes usar las siguientes variables en tu mensaje. Serán reemplazadas automáticamente:
+            Puedes usar las siguientes variables en tu mensaje:
           </p>
           <div className="grid grid-cols-2 gap-2">
             {VARIABLES.map(({ key, description }) => (
@@ -82,6 +95,12 @@ export function LinkedInMessageEditor({ step, onSave }: LinkedInMessageEditorPro
           </div>
         </div>
       </div>
+
+      <ConditionsEditor
+        conditions={conditions}
+        onChange={setConditions}
+        statusOptions={statusOptions}
+      />
 
       <div className="space-y-4">
         <div>
@@ -113,13 +132,10 @@ export function LinkedInMessageEditor({ step, onSave }: LinkedInMessageEditorPro
             />
             <span className="text-sm text-gray-500">días</span>
           </div>
-          <p className="mt-1 text-sm text-gray-500">
-            Tiempo de espera después del paso anterior
-          </p>
         </div>
       </div>
 
-      <div className="flex justify-end space-x-3 pt-4 border-t">
+      <div className="flex justify-end pt-6 border-t">
         <button
           onClick={handleSave}
           className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"

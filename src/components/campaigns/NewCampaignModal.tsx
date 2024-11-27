@@ -45,10 +45,16 @@ export function NewCampaignModal({ isOpen, onClose, onCampaignCreated }: NewCamp
   ]);
   const [formData, setFormData] = useState({
     name: '',
+    description: '',
+    type: 'recruitment' as const,
     candidatureId: '',
     endDate: '',
     sendToAllCandidates: true,
-    selectedCandidates: [],
+    selectedCandidates: [] as string[],
+    messages: {
+      rejection: '',
+      selection: ''
+    }
   });
 
   const handleTemplateSelect = (template: CampaignTemplate | null) => {
@@ -80,6 +86,11 @@ export function NewCampaignModal({ isOpen, onClose, onCampaignCreated }: NewCamp
 
   const handleCreateCampaign = async () => {
     try {
+      if (!formData.name || !formData.candidatureId) {
+        toast.error('Por favor complete todos los campos requeridos');
+        return;
+      }
+
       const newCampaign: Omit<Campaign, 'id'> = {
         ...formData,
         template: selectedTemplate || undefined,
@@ -91,9 +102,16 @@ export function NewCampaignModal({ isOpen, onClose, onCampaignCreated }: NewCamp
           responded: 0,
           applied: 0,
           interviews_scheduled: 0,
+          selected: 0,
+          rejected: 0
         },
+        candidates: [],
         endDate: formData.endDate,
-        formQuestions,
+        formQuestions: formQuestions.map(q => ({
+          id: q.id,
+          category: q.category,
+          text: q.text
+        })),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

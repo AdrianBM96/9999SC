@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Campaign } from '../../types';
 import { Filter, Search, ChevronLeft, ChevronRight } from 'lucide-react';
-import { CampaignDetailsModal } from './CampaignDetailsModal';
+import { CampaignDetails } from './CampaignDetails';
 import { NewCampaignModal } from './NewCampaignModal';
 import { toast } from 'react-toastify';
 import { campaignService } from '../../services/campaignService';
@@ -35,6 +35,12 @@ export function Campaigns() {
       console.error('Error deleting campaign:', error);
       toast.error('Error al eliminar la campaña');
     }
+  };
+
+  const handleUpdateCampaign = (updatedCampaign: Campaign) => {
+    setCampaigns(campaigns.map(c => 
+      c.id === updatedCampaign.id ? updatedCampaign : c
+    ));
   };
 
   const filteredCampaigns = campaigns.filter(campaign =>
@@ -141,9 +147,10 @@ export function Campaigns() {
       </div>
 
       {selectedCampaign && (
-        <CampaignDetailsModal
+        <CampaignDetails
           campaign={selectedCampaign}
           onClose={() => setSelectedCampaign(null)}
+          onUpdateCampaign={handleUpdateCampaign}
         />
       )}
 
@@ -151,8 +158,8 @@ export function Campaigns() {
         <NewCampaignModal
           isOpen={isNewCampaignModalOpen}
           onClose={() => setIsNewCampaignModalOpen(false)}
-          onCampaignCreated={(newCampaign) => {
-            setCampaigns([...campaigns, newCampaign]);
+          onCampaignCreated={(campaign) => {
+            setCampaigns([...campaigns, campaign]);
             setIsNewCampaignModalOpen(false);
           }}
         />

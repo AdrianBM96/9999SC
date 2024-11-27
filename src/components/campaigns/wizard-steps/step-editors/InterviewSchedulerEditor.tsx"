@@ -1,0 +1,171 @@
+import React, { useState, useEffect } from 'react';
+import { Info } from 'lucide-react';
+import { CampaignStep, CalendarProvider, StepCondition } from '../../../../types/campaign';
+import { settingsService } from '../../../../services/settingsService';
+import { ConditionsEditor } from './ConditionsEditor';
+import { 
+  CalendarConfigSection, 
+  CalendarProviderSection, 
+  MessageSection 
+} from './calendar';
+
+const VARIABLES = [
+  { key: '{{firstName}}', description: 'Nombre del candidato' },
+  { key: '{{position}}', description: 'Título de la posición' },
+  { key: '{{company}}', description: 'Nombre de la empresa' },
+  { key: '{{recruiterName}}', description: 'Tu nombre' },
+  { key: '{{schedulingLink}}', description: 'Link para agendar' },
+];
+
+const statusOptions = [
+  { value: 'new', label: 'Nuevo' },
+  { value: 'form_submitted', label: 'Formulario enviado' },
+  { value: 'under_review', label: 'En revisión' },
+  { value: 'interview_scheduled', label: 'Entrevista programada' },
+  { value: 'interview_completed', label: 'Entrevista completada' },
+  { value: 'selected', label: 'Seleccionado' },
+  { value: 'rejected', label: 'Rechazado' },
+  { value: 'withdrawn', label: 'Retirado' }
+];
+
+const DEFAULT_MESSAGE = `¡Hola {{firstName}}! 👋
+
+¡Excelentes noticias! Hemos revisado tu perfil y nos gustaría avanzar a la siguiente etapa del proceso de selección para la posición de {{position}} en {{company}}.
+
+Me gustaría coordinar una entrevista contigo para conocernos mejor y discutir la oportunidad en detalle. Puedes agendar directamente en el horario que mejor te convenga usando este link: {{schedulingLink}}
+
+¡Espero poder conversar pronto contigo!
+
+Saludos,
+{{recruiterName}}`;
+
+interface InterviewSchedulerEditorProps {
+  step: CampaignStep;
+  onSave: (updatedStep: CampaignStep) => void;
+}
+
+export function InterviewSchedulerEditor({ step, onSave }: InterviewSchedulerEditorProps) {
+  const [calendarConfig, setCalendarConfig] = useState({
+    provider: step.config.calendarConfig?.provider || 'google',
+    daysAvailable: step.config.calendarConfig?.daysAvailable || 7,
+    workingHours: {
+      start: step.config.calendarConfig?.workingHours?.start || '09:00',
+      end: step.config.calendarConfig?.workingHours?.end || '18:00',
+    },
+    duration: step.config.calendarConfig?.duration || 45,
+  });
+
+  const [message, setMessage] = useState(step.config.message || DEFAULT_MESSAGE);
+  const [conditions, setConditions] = useState<StepCondition[]>(step.conditions || []);
+  const [calendarStatus, setCalendarStatus] = useState({
+    google: false,
+    microsoft: false
+  });
+
+  useEffect(() => {
+    const checkCalendarConnections = async () => {
+      const googleConnection = await settingsService.getCalendarConnection('google');
+      const microsoftConnection = await settingsService.getCalendarConnection('microsoft');
+      
+      setCalendarStatus({
+        google: googleConnection?.connected || false,
+        microsoft: microsoftConnection?.connected || false
+      });
+    };
+
+    checkCalendarConnections();
+  }, []);
+
+  const handleProviderChange = (provider: CalendarProvider) => {
+    if (!calendarStatus[provider]) {
+      alert('Por favor, conecta primero tu cuenta de calendario en la sección de configuración.');
+      return;
+    }
+    setCalendarConfig({ ...calendarConfig, provider });
+  };
+
+  const insertVariable = (variable: string) => {
+    const textarea = document.getElementById('interview-message-input') as HTMLTextAreaElement;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const before = text.substring(0, start);
+    const after = text.substring(end);
+    
+    setMessage(before + variable + after);
+    
+    setTimeout(() => {
+      textarea.selectionStart = start + variable.length;
+      textarea.selectionEnd = start + variable.length;
+      textarea.focus();
+    }, 0);
+  };
+
+  const handleSave = () => {
+    if (!calendarStatus[calendarConfig.provider]) {
+      alert('Por favor, conecta primero tu cuenta de calendario en la sección de configuración.');
+      return;
+    }
+
+    onSave({
+      ...step,
+      config: {
+        ...step.config,
+        calendarConfig,
+        message,
+      },
+      conditions
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start">
+        <Info className="w-5 h-5 text-blue-500 mt-0.5 mr-3 flex-shrink-0" />
+        <div className="text-sm text-blue-700">
+          <p className="font-medium mb-1">Configuración del calendario</p>
+          <p>
+            Define los parámetros para la programación automática de entrevistas.
+            Los candidatos podrán seleccionar un horario dentro de los días y horas especificados.
+          </p>
+        </div>
+      </div>
+
+      <ConditionsEditor
+        conditions={conditions}
+        onChange={setConditions}
+        statusOptions={statusOptions}
+      />
+
+      <CalendarProviderSection
+        provider={calendarConfig.provider}
+        calendarStatus={calendarStatus}
+        onProviderChange={handleProviderChange}
+      />
+
+      <CalendarConfigSection
+        config={calendarConfig}
+        calendarStatus={calendarStatus}
+        onConfigChange={setCalendarConfig}
+        onProviderChange={handleProviderChange}
+      />
+
+      <MessageSection
+        message={message}
+        variables={VARIABLES}
+        onMessageChange={setMessage}
+        onInsertVariable={insertVariable}
+      />
+
+      <div className="flex justify-end pt-6 border-t">
+        <button
+          onClick={handleSave}
+          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+        >
+          Guardar cambios
+        </button>
+      </div>
+    </div>
+  );
+}
+

@@ -23,8 +23,8 @@ export function Header({ user, showRecruitmentMenu }: HeaderProps) {
   };
 
   const recruitmentLinks = [
-    { path: '/campaigns', label: 'Campañas' },
     { path: '/candidatures', label: 'Ofertas' },
+    { path: '/campaigns', label: 'Campañas' },
     { path: '/candidates', label: 'Candidatos' },
     { path: '/forms', label: 'Formularios' },
     { path: '/hiring', label: 'Contratación' },

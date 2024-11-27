@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { CampaignStep } from '../../../../types/campaign';
 import { Info, AlertCircle } from 'lucide-react';
+import { CampaignStep, StepCondition, CandidateStatus } from '../../../../types/campaign';
+import { ConditionsEditor } from './ConditionsEditor';
 
 interface LinkedInReminderEditorProps {
   step: CampaignStep;
@@ -15,6 +16,17 @@ const VARIABLES = [
   { key: '{{daysRemaining}}', description: 'Días restantes para aplicar' },
 ];
 
+const statusOptions = [
+  { value: 'new', label: 'Nuevo' },
+  { value: 'form_submitted', label: 'Formulario enviado' },
+  { value: 'under_review', label: 'En revisión' },
+  { value: 'interview_scheduled', label: 'Entrevista programada' },
+  { value: 'interview_completed', label: 'Entrevista completada' },
+  { value: 'selected', label: 'Seleccionado' },
+  { value: 'rejected', label: 'Rechazado' },
+  { value: 'withdrawn', label: 'Retirado' }
+];
+
 const DEFAULT_MESSAGE = `¡Hola {{firstName}}! 👋
 
 Te escribo porque hace {{daysAgo}} días te compartí una oportunidad laboral que podría interesarte. 
@@ -27,8 +39,9 @@ Saludos,
 {{recruiterName}}`;
 
 export function LinkedInReminderEditor({ step, onSave }: LinkedInReminderEditorProps) {
-  const [message, setMessage] = useState(step.config.message || DEFAULT_MESSAGE);
-  const [delay, setDelay] = useState(step.config.delay || 3);
+  const [message, setMessage] = useState(step.config?.message || DEFAULT_MESSAGE);
+  const [delay, setDelay] = useState(step.config?.delay || 3);
+  const [conditions, setConditions] = useState<StepCondition[]>(step.conditions || []);
 
   const handleSave = () => {
     onSave({
@@ -38,6 +51,7 @@ export function LinkedInReminderEditor({ step, onSave }: LinkedInReminderEditorP
         message,
         delay,
       },
+      conditions
     });
   };
 
@@ -66,7 +80,7 @@ export function LinkedInReminderEditor({ step, onSave }: LinkedInReminderEditorP
           <p className="font-medium mb-1">Recordatorio automático</p>
           <p>
             Este mensaje se enviará automáticamente si el candidato no ha completado el formulario
-            después del tiempo especificado. La variable {{daysRemaining}} se calculará automáticamente
+            después del tiempo especificado. La variable {'{{daysRemaining}}'} se calculará automáticamente
             basándose en la fecha de finalización de la campaña.
           </p>
         </div>
@@ -84,56 +98,57 @@ export function LinkedInReminderEditor({ step, onSave }: LinkedInReminderEditorP
               <button
                 key={key}
                 onClick={() => insertVariable(key)}
-                className="inline-flex items-center px-2.5 py-1.5 bg-white border border-blue-200 rounded text-xs hover:bg-blue-50"
+                className="text-left px-2 py-1 hover:bg-blue-100 rounded"
               >
-                <code className="text-blue-600 mr-1.5">{key}</code>
-                <span className="text-blue-700">{description}</span>
+                <span className="font-mono text-xs">{key}</span>
+                <br />
+                <span className="text-xs">{description}</span>
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Mensaje de recordatorio
-          </label>
-          <textarea
-            id="reminder-message-input"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            rows={8}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Escribe tu mensaje de recordatorio aquí..."
+      <div>
+        <label htmlFor="delay" className="block text-sm font-medium text-gray-700 mb-1">
+          Enviar recordatorio después de
+        </label>
+        <div className="flex items-center space-x-2">
+          <input
+            type="number"
+            id="delay"
+            value={delay}
+            onChange={(e) => setDelay(parseInt(e.target.value))}
+            className="block w-20 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            min="1"
           />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Enviar recordatorio después de
-          </label>
-          <div className="flex items-center space-x-2">
-            <input
-              type="number"
-              min="1"
-              max="30"
-              value={delay}
-              onChange={(e) => setDelay(Number(e.target.value))}
-              className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-            <span className="text-sm text-gray-500">días sin respuesta</span>
-          </div>
-          <p className="mt-1 text-sm text-gray-500">
-            Tiempo de espera antes de enviar el recordatorio
-          </p>
+          <span className="text-sm text-gray-500">días sin respuesta</span>
         </div>
       </div>
 
-      <div className="flex justify-end space-x-3 pt-4 border-t">
+      <div>
+        <label htmlFor="reminder-message-input" className="block text-sm font-medium text-gray-700 mb-1">
+          Mensaje del recordatorio
+        </label>
+        <textarea
+          id="reminder-message-input"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          rows={10}
+          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+        />
+      </div>
+
+      <ConditionsEditor
+        conditions={conditions}
+        onChange={setConditions}
+        statusOptions={statusOptions}
+      />
+
+      <div className="flex justify-end">
         <button
           onClick={handleSave}
-          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+          className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
           Guardar cambios
         </button>

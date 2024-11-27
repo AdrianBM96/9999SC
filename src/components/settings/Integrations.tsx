@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { validateIntegrations, saveIntegrationConfig } from '../../services/config';
-import { AlertCircle, CheckCircle, XCircle, Key, Eye, EyeOff } from 'lucide-react';
+import { validateIntegrations, updateUnipileConfig, getConfig } from '../../services/config';
+import { AlertCircle, CheckCircle, XCircle, Key, Eye, EyeOff, Globe, Link as LinkIcon } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { updateOpenAIConfig } from '../../services/ai/candidate/config';
+import { getLinkedInAccounts } from '../../services/linkedin-integration';
 
 const integrations = [
   {
@@ -13,10 +14,12 @@ const integrations = [
     configurable: true
   },
   {
-    name: 'LinkedIn',
+    name: 'LinkedIn (Unipile)',
     logo: 'https://content.linkedin.com/content/dam/me/business/en-us/amp/brand-site/v2/bg/LI-Bug.svg.original.svg',
-    description: 'Integración con LinkedIn para importar perfiles y gestionar conexiones.',
-    configKey: 'linkedin'
+    description: 'Integración con LinkedIn a través de Unipile para importar perfiles y gestionar conexiones.',
+    configKey: 'linkedin',
+    configurable: true,
+    configType: 'unipile'
   },
   {
     name: 'Google Calendar',
@@ -38,16 +41,64 @@ export function Integrations() {
   const [openAIKey, setOpenAIKey] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [savingKey, setSavingKey] = useState(false);
+  const [unipileToken, setUnipileToken] = useState('');
+  const [unipileDsn, setUnipileDsn] = useState('');
+  const [showUnipileToken, setShowUnipileToken] = useState(false);
+  const [savingUnipile, setSavingUnipile] = useState(false);
+  const [linkedInAccounts, setLinkedInAccounts] = useState<any[]>([]);
 
   useEffect(() => {
     checkIntegrations();
-    // Load saved OpenAI key if exists
+    loadSavedConfigs();
+  }, []);
+
+  const loadSavedConfigs = async () => {
+    // Load saved OpenAI key
     const savedKey = localStorage.getItem('openai_api_key');
     if (savedKey) {
       setOpenAIKey(savedKey);
       setIntegrationStatus(prev => ({ ...prev, openai: true }));
     }
-  }, []);
+
+    // Load saved Unipile config
+    const config = getConfig();
+    if (config.unipileToken && config.unipileDsn) {
+      setUnipileToken(config.unipileToken);
+      setUnipileDsn(config.unipileDsn);
+      
+      try {
+        const accounts = await getLinkedInAccounts();
+        setLinkedInAccounts(accounts);
+        setIntegrationStatus(prev => ({ ...prev, linkedin: accounts.length > 0 }));
+      } catch (error) {
+        console.error('Error loading LinkedIn accounts:', error);
+      }
+    }
+  };
+
+  const handleSaveUnipileConfig = async () => {
+    if (!unipileToken.trim() || !unipileDsn.trim()) {
+      toast.error('Por favor ingresa tanto el token como el DSN de Unipile');
+      return;
+    }
+
+    setSavingUnipile(true);
+    try {
+      updateUnipileConfig(unipileToken, unipileDsn);
+      
+      // Verify the connection by trying to fetch LinkedIn accounts
+      const accounts = await getLinkedInAccounts();
+      setLinkedInAccounts(accounts);
+      setIntegrationStatus(prev => ({ ...prev, linkedin: accounts.length > 0 }));
+      
+      toast.success('Configuración de Unipile guardada correctamente');
+    } catch (error) {
+      console.error('Error saving Unipile config:', error);
+      toast.error('Error al guardar la configuración de Unipile');
+    } finally {
+      setSavingUnipile(false);
+    }
+  };
 
   const checkIntegrations = async () => {
     try {
@@ -121,6 +172,74 @@ export function Integrations() {
             <Key className="w-4 h-4 mr-2" />
             {savingKey ? 'Guardando...' : 'Guardar clave de API'}
           </button>
+        </div>
+      );
+    }
+
+    if (integration.configType === 'unipile') {
+      return (
+        <div className="mt-4 space-y-4">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                DSN de Unipile
+              </label>
+              <div className="relative">
+                <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                <input
+                  type="text"
+                  value={unipileDsn}
+                  onChange={(e) => setUnipileDsn(e.target.value)}
+                  placeholder="Ej: api2.unipile.com:13233"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Token de Unipile
+              </label>
+              <div className="relative">
+                <input
+                  type={showUnipileToken ? 'text' : 'password'}
+                  value={unipileToken}
+                  onChange={(e) => setUnipileToken(e.target.value)}
+                  placeholder="Ingresa tu token de Unipile"
+                  className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
+                <button
+                  onClick={() => setShowUnipileToken(!showUnipileToken)}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showUnipileToken ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={handleSaveUnipileConfig}
+            disabled={savingUnipile}
+            className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center"
+          >
+            <LinkIcon className="w-4 h-4 mr-2" />
+            {savingUnipile ? 'Guardando...' : 'Guardar configuración'}
+          </button>
+
+          {linkedInAccounts.length > 0 && (
+            <div className="pt-4 border-t border-gray-200">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">Cuentas de LinkedIn conectadas:</h4>
+              <ul className="space-y-2">
+                {linkedInAccounts.map((account: any) => (
+                  <li key={account.id} className="flex items-center text-sm text-gray-600">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    {account.name || account.email || 'Cuenta LinkedIn'}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       );
     }
