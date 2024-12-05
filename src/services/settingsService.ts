@@ -43,17 +43,23 @@ class SettingsService {
     const left = window.screen.width / 2 - width / 2;
     const top = window.screen.height / 2 - height / 2;
 
+    const apiUrl = import.meta.env.VITE_API_URL;
+    if (!apiUrl) {
+      throw new Error('API URL not configured. Please check your environment variables.');
+    }
+
     const popup = window.open(
-      `${process.env.REACT_APP_API_URL}/auth/linkedin`,
+      `${apiUrl}/auth/linkedin`,
       'LinkedIn Login',
       `width=${width},height=${height},left=${left},top=${top}`
     );
 
     if (popup) {
       return new Promise((resolve, reject) => {
-        window.addEventListener('message', async (event) => {
-          if (event.origin !== process.env.REACT_APP_API_URL) return;
+        const messageHandler = async (event: MessageEvent) => {
+          if (event.origin !== apiUrl) return;
           if (event.data.type === 'linkedin_auth') {
+            window.removeEventListener('message', messageHandler);
             popup.close();
             if (event.data.success) {
               const settingsRef = await this.getUserSettingsRef();
@@ -70,7 +76,17 @@ class SettingsService {
               reject(new Error('LinkedIn authentication failed'));
             }
           }
-        });
+        };
+
+        window.addEventListener('message', messageHandler);
+        // Add timeout to clean up if the popup is closed without completing
+        const checkClosed = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(checkClosed);
+            window.removeEventListener('message', messageHandler);
+            reject(new Error('Authentication window was closed'));
+          }
+        }, 1000);
       });
     }
   }
@@ -81,17 +97,23 @@ class SettingsService {
     const left = window.screen.width / 2 - width / 2;
     const top = window.screen.height / 2 - height / 2;
 
+    const apiUrl = import.meta.env.VITE_API_URL;
+    if (!apiUrl) {
+      throw new Error('API URL not configured. Please check your environment variables.');
+    }
+
     const popup = window.open(
-      `${process.env.REACT_APP_API_URL}/auth/google`,
+      `${apiUrl}/auth/google`,
       'Google Calendar Login',
       `width=${width},height=${height},left=${left},top=${top}`
     );
 
     if (popup) {
       return new Promise((resolve, reject) => {
-        window.addEventListener('message', async (event) => {
-          if (event.origin !== process.env.REACT_APP_API_URL) return;
+        const messageHandler = async (event: MessageEvent) => {
+          if (event.origin !== apiUrl) return;
           if (event.data.type === 'google_auth') {
+            window.removeEventListener('message', messageHandler);
             popup.close();
             if (event.data.success) {
               const settingsRef = await this.getUserSettingsRef();
@@ -109,7 +131,17 @@ class SettingsService {
               reject(new Error('Google Calendar authentication failed'));
             }
           }
-        });
+        };
+
+        window.addEventListener('message', messageHandler);
+        // Add timeout to clean up if the popup is closed without completing
+        const checkClosed = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(checkClosed);
+            window.removeEventListener('message', messageHandler);
+            reject(new Error('Authentication window was closed'));
+          }
+        }, 1000);
       });
     }
   }
@@ -120,17 +152,23 @@ class SettingsService {
     const left = window.screen.width / 2 - width / 2;
     const top = window.screen.height / 2 - height / 2;
 
+    const apiUrl = import.meta.env.VITE_API_URL;
+    if (!apiUrl) {
+      throw new Error('API URL not configured. Please check your environment variables.');
+    }
+
     const popup = window.open(
-      `${process.env.REACT_APP_API_URL}/auth/microsoft`,
+      `${apiUrl}/auth/microsoft`,
       'Microsoft Calendar Login',
       `width=${width},height=${height},left=${left},top=${top}`
     );
 
     if (popup) {
       return new Promise((resolve, reject) => {
-        window.addEventListener('message', async (event) => {
-          if (event.origin !== process.env.REACT_APP_API_URL) return;
+        const messageHandler = async (event: MessageEvent) => {
+          if (event.origin !== apiUrl) return;
           if (event.data.type === 'microsoft_auth') {
+            window.removeEventListener('message', messageHandler);
             popup.close();
             if (event.data.success) {
               const settingsRef = await this.getUserSettingsRef();
@@ -148,7 +186,17 @@ class SettingsService {
               reject(new Error('Microsoft Calendar authentication failed'));
             }
           }
-        });
+        };
+
+        window.addEventListener('message', messageHandler);
+        // Add timeout to clean up if the popup is closed without completing
+        const checkClosed = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(checkClosed);
+            window.removeEventListener('message', messageHandler);
+            reject(new Error('Authentication window was closed'));
+          }
+        }, 1000);
       });
     }
   }
@@ -182,4 +230,3 @@ class SettingsService {
 }
 
 export const settingsService = new SettingsService();
-

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link2, Mail, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { toast } from 'react-toastify';
 import { settingsService } from '../../services/settingsService';
 
 interface AccountConnection {
@@ -22,9 +23,11 @@ export function AccountsSettings() {
 
   const loadConnections = async () => {
     try {
-      const linkedinStatus = await settingsService.getLinkedInConnection();
-      const googleStatus = await settingsService.getCalendarConnection('google');
-      const microsoftStatus = await settingsService.getCalendarConnection('microsoft');
+      const [linkedinStatus, googleStatus, microsoftStatus] = await Promise.all([
+        settingsService.getLinkedInConnection(),
+        settingsService.getCalendarConnection('google'),
+        settingsService.getCalendarConnection('microsoft')
+      ]);
 
       setConnections([
         { provider: 'linkedin', connected: linkedinStatus.connected, loading: false },
@@ -33,6 +36,15 @@ export function AccountsSettings() {
       ]);
     } catch (error) {
       console.error('Error loading connections:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error loading connection status';
+      toast.error(errorMessage);
+      
+      // Set all connections to disconnected state
+      setConnections([
+        { provider: 'linkedin', connected: false, loading: false },
+        { provider: 'google', connected: false, email: '', loading: false },
+        { provider: 'microsoft', connected: false, email: '', loading: false },
+      ]);
     }
   };
 
@@ -56,8 +68,12 @@ export function AccountsSettings() {
           break;
       }
       await loadConnections();
+      toast.success(`${provider.charAt(0).toUpperCase() + provider.slice(1)} conectado correctamente`);
     } catch (error) {
       console.error(`Error connecting ${provider}:`, error);
+      // Show error message to user
+      const errorMessage = error instanceof Error ? error.message : 'Error connecting to service';
+      toast.error(errorMessage);
     } finally {
       setConnections(prev => 
         prev.map(conn => 
@@ -87,8 +103,11 @@ export function AccountsSettings() {
           break;
       }
       await loadConnections();
+      toast.success(`${provider.charAt(0).toUpperCase() + provider.slice(1)} desconectado correctamente`);
     } catch (error) {
       console.error(`Error disconnecting ${provider}:`, error);
+      const errorMessage = error instanceof Error ? error.message : `Error al desconectar ${provider}`;
+      toast.error(errorMessage);
     } finally {
       setConnections(prev => 
         prev.map(conn => 
