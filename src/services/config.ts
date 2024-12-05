@@ -6,6 +6,14 @@ interface Config {
   unileapApiKey: string;
   googleCalendarClientId: string;
   microsoftCalendarClientId: string;
+  firebase: {
+    apiKey: string;
+    authDomain: string;
+    projectId: string;
+    storageBucket: string;
+    messagingSenderId: string;
+    appId: string;
+  };
 }
 
 let config: Config | null = null;
@@ -36,7 +44,15 @@ export function getConfig(): Config {
       unileapApiUrl: import.meta.env.VITE_UNILEAP_API_URL || '',
       unileapApiKey: import.meta.env.VITE_UNILEAP_API_KEY || '',
       googleCalendarClientId: '',
-      microsoftCalendarClientId: ''
+      microsoftCalendarClientId: '',
+      firebase: {
+        apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
+        authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
+        projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
+        storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
+        messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+        appId: import.meta.env.VITE_FIREBASE_APP_ID || ''
+      }
     };
   }
   return config;
@@ -48,8 +64,18 @@ export function updateUnipileConfig(token: string, dsn: string) {
       openAiApiKey: localStorage.getItem('openai_api_key') || '',
       unipileToken: token,
       unipileDsn: dsn,
+      unileapApiUrl: import.meta.env.VITE_UNILEAP_API_URL || '',
+      unileapApiKey: import.meta.env.VITE_UNILEAP_API_KEY || '',
       googleCalendarClientId: '',
-      microsoftCalendarClientId: ''
+      microsoftCalendarClientId: '',
+      firebase: {
+        apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
+        authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
+        projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
+        storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
+        messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+        appId: import.meta.env.VITE_FIREBASE_APP_ID || ''
+      }
     };
   } else {
     config.unipileToken = token;
