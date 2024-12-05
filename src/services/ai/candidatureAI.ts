@@ -1,10 +1,5 @@
-import OpenAI from 'openai';
 import { Candidature } from '../../types';
-
-const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true
-});
+import { getOpenAIClient } from '../../lib/openai';
 
 export async function generateJobDescription(candidature: Partial<Candidature>): Promise<string> {
   try {
@@ -17,6 +12,7 @@ export async function generateJobDescription(candidature: Partial<Candidature>):
     Habilidades: ${candidature.skills?.join(', ')}.
     La descripción debe ser detallada, atractiva y profesional, incluyendo responsabilidades, requisitos y beneficios.`;
 
+    const openai = await getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [{ role: "user", content: prompt }],
@@ -34,6 +30,7 @@ export async function generateSalaryRange(title: string, location: string): Prom
   try {
     const prompt = `Proporciona un rango salarial realista para el puesto de ${title} en ${location}. El formato debe ser "XXk - YYk", donde XX e YY son números enteros que representan miles de euros al año.`;
 
+    const openai = await getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [{ role: "user", content: prompt }],
@@ -61,6 +58,7 @@ export async function generateMarketDemand(title: string, location: string): Pro
   try {
     const prompt = `Evalúa la demanda del mercado para el puesto de ${title} en ${location}. Responde solo con "Alta", "Media" o "Baja".`;
 
+    const openai = await getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [{ role: "user", content: prompt }],

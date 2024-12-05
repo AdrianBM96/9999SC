@@ -1,4 +1,4 @@
-import { openai } from './config';
+import { getOpenAIClient } from './config';
 
 export async function processExperienceWithAI(experienceText: string): Promise<any[]> {
   try {
@@ -14,6 +14,7 @@ export async function processExperienceWithAI(experienceText: string): Promise<a
     Texto:
     ${experienceText}`;
 
+    const openai = await getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [

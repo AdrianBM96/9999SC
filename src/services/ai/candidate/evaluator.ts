@@ -1,5 +1,5 @@
 import { DetailedLinkedInProfile, Candidature } from '../../../types';
-import { openai } from './config';
+import { getOpenAIClient } from './config';
 
 export async function generateAIEvaluation(profile: DetailedLinkedInProfile, candidature: Candidature): Promise<string> {
   try {
@@ -64,6 +64,7 @@ export async function generateAIEvaluation(profile: DetailedLinkedInProfile, can
     - Habilidades requeridas: ${candidature.skills?.join(', ') || ''}
     - Idiomas requeridos: ${candidature.languages?.join(', ') || ''}`;
 
+    const openai = await getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -109,6 +110,7 @@ export async function generateAdequacyPercentage(profile: DetailedLinkedInProfil
     - Habilidades requeridas: ${candidature.skills?.join(', ')}
     - Idiomas requeridos: ${candidature.languages?.join(', ')}`;
 
+    const openai = await getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
