@@ -1,10 +1,5 @@
-import OpenAI from 'openai';
 import { Candidature, FormField } from '../../types';
-
-const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true
-});
+import { getOpenAIClient } from '../../lib/openai';
 
 export async function generateKillerQuestions(candidature: Candidature): Promise<FormField[]> {
   try {
@@ -32,6 +27,7 @@ export async function generateKillerQuestions(candidature: Candidature): Promise
       }
     ]`;
 
+    const openai = await getOpenAIClient();
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -69,6 +65,7 @@ export async function generateConnectionMessage(candidature: Candidature): Promi
     4. No exceder los 300 caracteres
     5. Incluir un link al formulario de aplicación (usa {FORM_URL} como placeholder)`;
 
+    const openai = await getOpenAIClient();
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -104,6 +101,7 @@ export async function generateReminderMessage(candidature: Candidature): Promise
     3. Animar a responder sin presionar
     4. No exceder los 200 caracteres`;
 
+    const openai = await getOpenAIClient();
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -132,6 +130,7 @@ export async function extractSearchKeywords(candidature: Candidature): Promise<s
 
     Título: ${candidature.title}`;
 
+    const openai = await getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [{ role: "user", content: prompt }],
@@ -169,6 +168,7 @@ export async function evaluateResponse(response: string, candidature: Candidatur
       "feedback": "string"
     }`;
 
+    const openai = await getOpenAIClient();
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [

@@ -1,4 +1,4 @@
-import { openai } from '../../lib/openai';
+import { getOpenAIClient } from '../../lib/openai';
 
 interface GeneratedQuestion {
   id: string;
@@ -46,6 +46,7 @@ Formato de respuesta requerido:
   }
 ]`;
 
+    const openai = await getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [

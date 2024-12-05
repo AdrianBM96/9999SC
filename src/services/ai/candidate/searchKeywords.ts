@@ -1,5 +1,5 @@
 import { Candidature } from '../../../types';
-import { openai } from './config';
+import { getOpenAIClient } from './config';
 
 export async function extractSearchKeywords(candidature: Candidature): Promise<string> {
   try {
@@ -8,6 +8,7 @@ export async function extractSearchKeywords(candidature: Candidature): Promise<s
     Título: ${candidature.title}
     Descripción: ${candidature.description}`;
 
+    const openai = await getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [{ role: "user", content: prompt }],

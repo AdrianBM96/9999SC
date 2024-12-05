@@ -1,5 +1,5 @@
 import { DetailedLinkedInProfile } from '../../../types';
-import { openai, pdfjsLib } from './config';
+import { getOpenAIClient, pdfjsLib } from './config';
 
 export async function extractCVInformation(arrayBuffer: ArrayBuffer): Promise<Partial<DetailedLinkedInProfile>> {
   try {
@@ -68,6 +68,7 @@ export async function extractCVInformation(arrayBuffer: ArrayBuffer): Promise<Pa
     Texto del CV:
     ${fullText}`;
 
+    const openai = await getOpenAIClient();
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [

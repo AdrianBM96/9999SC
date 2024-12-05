@@ -1,10 +1,5 @@
-import OpenAI from 'openai';
 import { DetailedLinkedInProfile, Candidature } from '../../types';
-
-const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true
-});
+import { getOpenAIClient } from '../../lib/openai';
 
 export async function generateInterviewQuestions(candidate: DetailedLinkedInProfile, candidature: Candidature): Promise<string[]> {
   try {
@@ -29,6 +24,7 @@ export async function generateInterviewQuestions(candidate: DetailedLinkedInProf
     4. Ser específicas al contexto del candidato
     5. Incluir preguntas situacionales`;
 
+    const openai = await getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [{ role: "user", content: prompt }],
@@ -74,6 +70,7 @@ export async function generateInterviewFeedback(
     4. Recomendaciones específicas
     5. Conclusión general`;
 
+    const openai = await getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [{ role: "user", content: prompt }],

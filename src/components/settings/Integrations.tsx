@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { validateIntegrations, updateUnipileConfig, getConfig } from '../../services/config';
-import { AlertCircle, CheckCircle, XCircle, Key, Eye, EyeOff, Globe, Link as LinkIcon } from 'lucide-react';
+import { AlertCircle, CheckCircle, XCircle, Globe, Link as LinkIcon, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { updateOpenAIConfig } from '../../services/ai/candidate/config';
 import { getLinkedInAccounts } from '../../services/linkedin-integration';
+import { OpenAIConfig } from './OpenAIConfig';
 
 const integrations = [
   {
@@ -38,9 +38,7 @@ const integrations = [
 export function Integrations() {
   const [integrationStatus, setIntegrationStatus] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
-  const [openAIKey, setOpenAIKey] = useState('');
-  const [showKey, setShowKey] = useState(false);
-  const [savingKey, setSavingKey] = useState(false);
+  // OpenAI state is now handled by OpenAIConfig component
   const [unipileToken, setUnipileToken] = useState('');
   const [unipileDsn, setUnipileDsn] = useState('');
   const [showUnipileToken, setShowUnipileToken] = useState(false);
@@ -53,12 +51,7 @@ export function Integrations() {
   }, []);
 
   const loadSavedConfigs = async () => {
-    // Load saved OpenAI key
-    const savedKey = localStorage.getItem('openai_api_key');
-    if (savedKey) {
-      setOpenAIKey(savedKey);
-      setIntegrationStatus(prev => ({ ...prev, openai: true }));
-    }
+    // OpenAI configuration is now handled by OpenAIConfig component
 
     // Load saved Unipile config
     const config = getConfig();
@@ -112,31 +105,7 @@ export function Integrations() {
     }
   };
 
-  const handleSaveOpenAIKey = async () => {
-    if (!openAIKey.trim()) {
-      toast.error('Por favor ingresa una clave de API válida');
-      return;
-    }
-
-    setSavingKey(true);
-    try {
-      // Save to localStorage
-      localStorage.setItem('openai_api_key', openAIKey);
-      
-      // Update OpenAI configuration
-      updateOpenAIConfig(openAIKey);
-      
-      // Update status
-      setIntegrationStatus(prev => ({ ...prev, openai: true }));
-      
-      toast.success('Clave de API de OpenAI guardada correctamente');
-    } catch (error) {
-      console.error('Error saving OpenAI key:', error);
-      toast.error('Error al guardar la clave de API');
-    } finally {
-      setSavingKey(false);
-    }
-  };
+  // OpenAI configuration is now handled by OpenAIConfig component
 
   const getStatusIcon = (status: boolean) => {
     if (loading) return <AlertCircle className="h-5 w-5 text-gray-400 animate-pulse" />;
@@ -148,30 +117,8 @@ export function Integrations() {
   const renderIntegrationContent = (integration: typeof integrations[0]) => {
     if (integration.configKey === 'openai') {
       return (
-        <div className="mt-4 space-y-4">
-          <div className="relative">
-            <input
-              type={showKey ? 'text' : 'password'}
-              value={openAIKey}
-              onChange={(e) => setOpenAIKey(e.target.value)}
-              placeholder="Ingresa tu clave de API de OpenAI"
-              className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-            />
-            <button
-              onClick={() => setShowKey(!showKey)}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-            >
-              {showKey ? <EyeOff size={20} /> : <Eye size={20} />}
-            </button>
-          </div>
-          <button
-            onClick={handleSaveOpenAIKey}
-            disabled={savingKey}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center"
-          >
-            <Key className="w-4 h-4 mr-2" />
-            {savingKey ? 'Guardando...' : 'Guardar clave de API'}
-          </button>
+        <div className="mt-4">
+          <OpenAIConfig />
         </div>
       );
     }

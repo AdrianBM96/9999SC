@@ -1,16 +1,36 @@
 import OpenAI from 'openai';
+import { auth } from '../firebase';
+import { getOpenAIConfig } from '../services/openaiConfig';
 
-// Obtener la API key de las variables de entorno de Vite
-const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+let openaiInstance: OpenAI | null = null;
 
-if (!apiKey) {
-  throw new Error('VITE_OPENAI_API_KEY no está definida en las variables de entorno');
+export async function getOpenAIClient(): Promise<OpenAI> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('Usuario no autenticado. Por favor, inicia sesión.');
+  }
+
+  try {
+    const config = await getOpenAIConfig(user);
+    if (!config?.apiKey) {
+      throw new Error('API Key de OpenAI no configurada. Por favor, configura tu API Key en la sección de configuración.');
+    }
+
+    // Create new instance only if it doesn't exist or if the API key has changed
+    if (!openaiInstance || openaiInstance.apiKey !== config.apiKey) {
+      openaiInstance = new OpenAI({
+        apiKey: config.apiKey,
+        organization: config.orgId,
+        dangerouslyAllowBrowser: true
+      });
+    }
+
+    return openaiInstance;
+  } catch (error) {
+    console.error('Error getting OpenAI configuration:', error);
+    throw new Error('Error al obtener la configuración de OpenAI. Por favor, intenta de nuevo.');
+  }
 }
-
-export const openai = new OpenAI({
-  apiKey: apiKey,
-  organization: import.meta.env.VITE_OPENAI_ORG_ID // Opcional
-});
 
 // Función auxiliar para manejar errores de la API
 export async function handleOpenAIError(error: any): Promise<string> {

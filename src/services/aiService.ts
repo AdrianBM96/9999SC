@@ -1,12 +1,7 @@
-import OpenAI from 'openai';
 import { DetailedLinkedInProfile, Candidature } from '../types';
 import axios from 'axios';
 import * as pdfjsLib from 'pdfjs-dist';
-
-const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true
-});
+import { getOpenAIClient } from '../lib/openai';
 
 export async function extractCVInformation(cvUrl: string): Promise<Partial<DetailedLinkedInProfile>> {
   try {
@@ -94,6 +89,7 @@ export async function extractCVInformation(cvUrl: string): Promise<Partial<Detai
     4. Normaliza las fechas al formato YYYY-MM cuando sea posible
     5. Si no hay una fecha final en una experiencia, usa "Presente"`;
 
+    const openai = await getOpenAIClient();
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -174,6 +170,7 @@ export async function generateAIEvaluation(profile: DetailedLinkedInProfile, can
     Formación requerida: ${candidature.education?.join(', ')}
     Habilidades requeridas: ${candidature.skills?.join(', ')}`;
 
+    const openai = await getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [{ role: "user", content: prompt }],
@@ -208,6 +205,7 @@ export async function generateAdequacyPercentage(profile: DetailedLinkedInProfil
     Formación requerida: ${candidature.education?.join(', ')}
     Habilidades requeridas: ${candidature.skills?.join(', ')}`;
 
+    const openai = await getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [{ role: "user", content: prompt }],
@@ -236,6 +234,7 @@ export async function processExperienceWithAI(experienceText: string): Promise<a
     Texto de la experiencia:
     ${experienceText}`;
 
+    const openai = await getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [{ role: "user", content: prompt }],
@@ -258,6 +257,7 @@ export async function extractSearchKeywords(candidature: Candidature): Promise<s
     Título: ${candidature.title}
     Descripción: ${candidature.description}`;
 
+    const openai = await getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [{ role: "user", content: prompt }],
