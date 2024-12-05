@@ -1,15 +1,15 @@
 import OpenAI from 'openai';
 
-// Obtener la API key de las variables de entorno
-const apiKey = process.env.OPENAI_API_KEY;
+// Obtener la API key de las variables de entorno de Vite
+const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
 if (!apiKey) {
-  throw new Error('OPENAI_API_KEY no está definida en las variables de entorno');
+  throw new Error('VITE_OPENAI_API_KEY no está definida en las variables de entorno');
 }
 
 export const openai = new OpenAI({
   apiKey: apiKey,
-  organization: process.env.OPENAI_ORG_ID // Opcional
+  organization: import.meta.env.VITE_OPENAI_ORG_ID // Opcional
 });
 
 // Función auxiliar para manejar errores de la API
