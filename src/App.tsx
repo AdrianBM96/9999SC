@@ -17,10 +17,10 @@ import { ProfileSettings } from './components/settings/ProfileSettings';
 import { CalendarSettings } from './components/settings/CalendarSettings';
 import { NotificationsSettings } from './components/settings/NotificationsSettings';
 import { IntegrationsSettings } from './components/settings/IntegrationsSettings';
+import { UnileapCallback } from './components/settings/UnileapCallback';
 import { Login } from './components/Login';
 import { PublicPage } from './components/public/PublicPage';
 import { Campaigns } from './components/campaigns/Campaigns';
-import { LinkedInCallback } from './components/auth/LinkedInCallback';
 import { NewCampaignForm } from './components/campaigns/NewCampaignForm';
 
 import { auth } from './firebase';
@@ -61,7 +61,6 @@ const router = createBrowserRouter(
     createRoutesFromElements(
       <>
         <Route path="/company/:companyId" element={<PublicPage />} />
-        <Route path="/auth/linkedin" element={<LinkedInCallback />} />
         <Route path="/" element={user ? <AppLayout /> : <Login />}>
           <Route index element={<Dashboard />} />
           <Route path="campaigns" element={<Campaigns />} />
@@ -76,6 +75,7 @@ const router = createBrowserRouter(
             <Route index element={<ProfileSettings />} />
             <Route path="profile" element={<ProfileSettings />} />
             <Route path="accounts" element={<AccountsSettings />} />
+            <Route path="accounts/callback" element={<UnileapCallback />} />
             <Route path="calendar" element={<CalendarSettings />} />
             <Route path="notifications" element={<NotificationsSettings />} />
             <Route path="integrations" element={<IntegrationsSettings />} />

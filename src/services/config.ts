@@ -2,6 +2,8 @@ interface Config {
   openAiApiKey: string;
   unipileToken: string;
   unipileDsn: string;
+  unileapApiUrl: string;
+  unileapApiKey: string;
   googleCalendarClientId: string;
   microsoftCalendarClientId: string;
 }
@@ -9,7 +11,11 @@ interface Config {
 let config: Config | null = null;
 
 export function initConfig(configData: Config) {
-  config = configData;
+  config = {
+    ...configData,
+    unileapApiUrl: import.meta.env.VITE_UNILEAP_API_URL || configData.unileapApiUrl || '',
+    unileapApiKey: import.meta.env.VITE_UNILEAP_API_KEY || configData.unileapApiKey || ''
+  };
   
   // Store Unipile configuration in localStorage
   if (configData.unipileToken) {
@@ -27,6 +33,8 @@ export function getConfig(): Config {
       openAiApiKey: localStorage.getItem('openai_api_key') || '',
       unipileToken: localStorage.getItem('unipile_token') || '',
       unipileDsn: localStorage.getItem('unipile_dsn') || '',
+      unileapApiUrl: import.meta.env.VITE_UNILEAP_API_URL || '',
+      unileapApiKey: import.meta.env.VITE_UNILEAP_API_KEY || '',
       googleCalendarClientId: '',
       microsoftCalendarClientId: ''
     };
