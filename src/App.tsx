@@ -15,6 +15,7 @@ import { AccountsSettings } from './components/settings/AccountsSettings';
 import { ProfileSettings } from './components/settings/ProfileSettings';
 import { CalendarSettings } from './components/settings/CalendarSettings';
 import { NotificationsSettings } from './components/settings/NotificationsSettings';
+import { IntegrationsSettings } from './components/settings/IntegrationsSettings';
 import { Login } from './components/Login';
 import { PublicPage } from './components/public/PublicPage';
 import { Campaigns } from './components/campaigns/Campaigns';
@@ -71,6 +72,7 @@ function App() {
                         <Route path="accounts" element={<AccountsSettings />} />
                         <Route path="calendar" element={<CalendarSettings />} />
                         <Route path="notifications" element={<NotificationsSettings />} />
+                        <Route path="integrations" element={<IntegrationsSettings />} />
                       </Route>
                     </Routes>
                   </main>

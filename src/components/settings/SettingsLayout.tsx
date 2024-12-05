@@ -1,12 +1,13 @@
 import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { User, Calendar, Bell, Link as LinkIcon } from 'lucide-react';
+import { User, Calendar, Bell, Link as LinkIcon, Plug } from 'lucide-react';
 
 const settingsMenu = [
   { path: '/settings/profile', label: 'Perfil', icon: User },
   { path: '/settings/accounts', label: 'Cuentas conectadas', icon: LinkIcon },
   { path: '/settings/calendar', label: 'Calendario', icon: Calendar },
   { path: '/settings/notifications', label: 'Notificaciones', icon: Bell },
+  { path: '/settings/integrations', label: 'Integraciones', icon: Plug },
 ];
 
 export function SettingsLayout() {
