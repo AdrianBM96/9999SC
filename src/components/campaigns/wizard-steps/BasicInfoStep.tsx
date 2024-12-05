@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
+import { AlertCircle } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../../firebase';
 import { Candidature, Candidate } from '../../../types/campaign';
@@ -12,7 +14,6 @@ import { ContinueButton } from './ContinueButton';
 
 interface FormData {
   name: string;
-  description: string;
   candidatureId: string;
   endDate?: string;
   sendToAllCandidates: boolean;
@@ -72,10 +73,6 @@ export function BasicInfoStep({ formData, onFormDataChange, onNext }: BasicInfoS
       newErrors.name = 'El nombre de la campaña es requerido';
     }
     
-    if (!formData.description.trim()) {
-      newErrors.description = 'La descripción de la campaña es requerida';
-    }
-    
     if (!formData.candidatureId) {
       newErrors.candidatureId = 'Selecciona una vacante';
     }
@@ -103,73 +100,45 @@ export function BasicInfoStep({ formData, onFormDataChange, onNext }: BasicInfoS
       setLoading(true);
       setErrors(prev => ({ ...prev, candidatureId: undefined }));
 
-      // Obtener la candidatura seleccionada
       const selectedCandidature = candidatures.find(c => c.id === candidatureId);
       if (!selectedCandidature) {
         throw new Error('Candidatura no encontrada');
       }
 
-      // Obtener todos los candidatos
       const candidatesList = await fetchCandidatesList(candidatureId, candidatures);
-      console.log('Candidatos obtenidos:', candidatesList);
+      
+      // Filtrar solo candidatos activos y asociados a la candidatura
+      let filteredCandidates = candidatesList.filter(candidate => 
+        (candidate.candidatureId === candidatureId || 
+         (candidate.department?.id === selectedCandidature.department?.id)) &&
+        (candidate.status === 'active' || !candidate.status)
+      );
 
-      // Filtrar candidatos elegibles
-      let filteredCandidates = candidatesList.filter(candidate => {
-        // Verificar si el candidato ya está asignado a la candidatura
-        const matchesCandidature = candidate.candidatureId === candidatureId;
-
-        // Verificar si el candidato pertenece al mismo departamento
-        const matchesDepartment = candidate.department?.id && 
-                                selectedCandidature.department?.id && 
-                                candidate.department.id === selectedCandidature.department.id;
-
-        // Verificar si el candidato está activo
-        const isActive = candidate.status === 'active' || !candidate.status;
-
-        // Incluir si coincide con la candidatura, departamento y está activo
-        return (matchesCandidature || matchesDepartment) && isActive;
-      });
-
-      console.log('Candidatos filtrados por candidatura/departamento:', filteredCandidates);
-
-      // Aplicar filtro de búsqueda si existe
+      // Aplicar búsqueda si existe
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
-        filteredCandidates = filteredCandidates.filter(candidate => {
-          const nameMatch = candidate.name?.toLowerCase().includes(searchLower);
-          const emailMatch = candidate.email?.toLowerCase().includes(searchLower);
-          return nameMatch || emailMatch;
-        });
-        console.log('Candidatos filtrados por búsqueda:', filteredCandidates);
-      }
-
-      // Aplicar filtro de departamento si está seleccionado
-      if (selectedDepartment) {
         filteredCandidates = filteredCandidates.filter(candidate => 
-          candidate.department?.id === selectedDepartment
+          candidate.name?.toLowerCase().includes(searchLower) ||
+          candidate.email?.toLowerCase().includes(searchLower)
         );
-        console.log('Candidatos filtrados por departamento:', filteredCandidates);
       }
 
-      // Ordenar candidatos por nombre
-      filteredCandidates.sort((a, b) => {
-        if (!a.name) return 1;
-        if (!b.name) return -1;
-        return a.name.localeCompare(b.name);
-      });
+      // Ordenar por nombre
+      filteredCandidates.sort((a, b) => 
+        (a.name || '').localeCompare(b.name || '')
+      );
 
       setCandidates(filteredCandidates);
 
-      // Mostrar mensaje si no hay candidatos
       if (filteredCandidates.length === 0) {
-        toast.info('No se encontraron candidatos elegibles para esta candidatura');
+        toast.info('No se encontraron candidatos para esta vacante');
       }
 
     } catch (error) {
       console.error('Error al cargar los candidatos:', error);
       setErrors(prev => ({
         ...prev,
-        candidatureId: 'Error al cargar los candidatos. Por favor, inténtalo de nuevo.'
+        candidatureId: 'Error al cargar los candidatos'
       }));
       toast.error('Error al cargar los candidatos');
     } finally {
@@ -182,26 +151,17 @@ export function BasicInfoStep({ formData, onFormDataChange, onNext }: BasicInfoS
     if (!selectedCandidature) return;
 
     const currentDate = new Date().toLocaleDateString('es-ES');
-    const autoName = selectedCandidature.department?.name
-      ? `${selectedCandidature.title} - ${selectedCandidature.department.name} - ${currentDate}`
-      : `${selectedCandidature.title} - ${currentDate}`;
-
-    const autoDescription = `Campaña de ${formData.type === 'recruitment' ? 'reclutamiento' : 'sourcing'} para ${selectedCandidature.title}${
-      selectedCandidature.department?.name ? ` en ${selectedCandidature.department.name}` : ''
-    }`;
+    const autoName = `${selectedCandidature.title} - ${currentDate}`;
 
     onFormDataChange({ 
       ...formData, 
       candidatureId,
       name: autoName,
-      description: autoDescription,
       selectedCandidates: [],
       department: selectedCandidature.department || null
     });
 
-    // Reset filters when changing candidature
     setSearchTerm('');
-    setSelectedDepartment(null);
     setErrors({});
   };
 
@@ -230,7 +190,7 @@ export function BasicInfoStep({ formData, onFormDataChange, onNext }: BasicInfoS
     }
   };
 
-  const isValid = formData.name && formData.description && formData.candidatureId && formData.endDate && 
+  const isValid = formData.name && formData.candidatureId && formData.endDate && 
     (formData.sendToAllCandidates || (formData.selectedCandidates && formData.selectedCandidates.length > 0));
 
   return (
@@ -238,36 +198,6 @@ export function BasicInfoStep({ formData, onFormDataChange, onNext }: BasicInfoS
       <BasicInfoHeader />
 
       <div className="space-y-6">
-        {/* Tipo de campaña */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Tipo de campaña
-          </label>
-          <div className="flex space-x-4">
-            <button
-              type="button"
-              onClick={() => onFormDataChange({ ...formData, type: 'recruitment' })}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                formData.type === 'recruitment'
-                  ? 'bg-blue-100 text-blue-700 border-2 border-blue-500'
-                  : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
-              }`}
-            >
-              Reclutamiento
-            </button>
-            <button
-              type="button"
-              onClick={() => onFormDataChange({ ...formData, type: 'sourcing' })}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                formData.type === 'sourcing'
-                  ? 'bg-blue-100 text-blue-700 border-2 border-blue-500'
-                  : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
-              }`}
-            >
-              Sourcing
-            </button>
-          </div>
-        </div>
 
         <CandidatureSelect 
           candidatures={candidatures}
@@ -292,31 +222,7 @@ export function BasicInfoStep({ formData, onFormDataChange, onNext }: BasicInfoS
             error={errors.name}
           />
 
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Descripción
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => {
-                onFormDataChange({ ...formData, description: e.target.value });
-                if (errors.description) {
-                  setErrors(prev => {
-                    const { description, ...rest } = prev;
-                    return rest;
-                  });
-                }
-              }}
-              rows={3}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                errors.description ? 'border-red-300' : 'border-gray-300'
-              }`}
-              placeholder="Describe el objetivo de esta campaña..."
-            />
-            {errors.description && (
-              <p className="text-sm text-red-600">{errors.description}</p>
-            )}
-          </div>
+          
         </div>
 
         <DateInput

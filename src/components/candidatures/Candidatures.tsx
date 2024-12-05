@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, deleteDoc, doc, query, where } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { Candidature, Department } from '../../types';
-import { Filter, Search, ChevronLeft, ChevronRight, Eye, Edit2, Trash2, MoreVertical, Code, MapPin, Users, AlertCircle } from 'lucide-react';
+import { Filter, Search, ChevronLeft, ChevronRight, Eye, Edit2, Trash2, MoreVertical, Code, MapPin, Users, AlertCircle, Briefcase } from 'lucide-react';
 import { CandidatureDetailsModal } from './CandidatureDetailsModal';
 import { AddCandidature } from './AddCandidature';
 import { FilterSidebar } from './FilterSidebar';
@@ -26,10 +26,15 @@ export function Candidatures() {
     try {
       const candidaturesCollection = collection(db, 'candidatures');
       const candidaturesSnapshot = await getDocs(candidaturesCollection);
-      const candidaturesList = candidaturesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Candidature));
+      const candidaturesList = await Promise.all(candidaturesSnapshot.docs.map(async doc => {
+        const candidatesQuery = query(collection(db, 'savedCandidates'), where('candidatureId', '==', doc.id));
+        const candidatesSnapshot = await getDocs(candidatesQuery);
+        return {
+          id: doc.id,
+          ...doc.data(),
+          candidateCount: candidatesSnapshot.size
+        } as Candidature;
+      }));
       setCandidatures(candidaturesList);
     } catch (error) {
       console.error('Error fetching candidatures:', error);
@@ -163,7 +168,7 @@ export function Candidatures() {
                 </div>
                 <div className="flex items-center text-sm text-gray-500">
                   <Users className="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
-                  0 candidatos
+                  {candidature.candidateCount} candidato{candidature.candidateCount !== 1 ? 's' : ''}
                 </div>
                 <div>
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${

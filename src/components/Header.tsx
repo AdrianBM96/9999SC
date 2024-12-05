@@ -24,12 +24,9 @@ export function Header({ user, showRecruitmentMenu }: HeaderProps) {
 
   const recruitmentLinks = [
     { path: '/candidatures', label: 'Ofertas' },
-    { path: '/campaigns', label: 'Campañas' },
     { path: '/candidates', label: 'Candidatos' },
-    { path: '/forms', label: 'Formularios' },
-    { path: '/hiring', label: 'Contratación' },
+    { path: '/campaigns', label: 'Campañas' },
     { path: '/linkedin-inbox', label: 'Inbox LinkedIn' },
-    { path: '/interviews', label: 'Entrevistas' },
   ];
 
   const settingsLinks = [
