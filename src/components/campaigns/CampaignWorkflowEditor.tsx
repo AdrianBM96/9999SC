@@ -192,14 +192,7 @@ const CampaignWorkflowEditor = () => {
             </div>
           )}
         </FlowContainer>
-        <div className="p-4 border-t border-gray-200">
-          <button
-            onClick={addNewNode}
-            className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
-          >
-            Add New Step
-          </button>
-        </div>
+        
       </ReactFlowProvider>
     </Container>
   );

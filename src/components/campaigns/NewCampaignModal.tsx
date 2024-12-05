@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { X, ChevronRight } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-import { Campaign, CampaignStep, CampaignTemplate } from '../../types/campaign';
-import { SelectTemplate } from './wizard-steps/SelectTemplate';
+import { Campaign, CampaignStep } from '../../types/campaign';
 import { BasicInfoStep } from './wizard-steps/BasicInfoStep';
 import { ConfigureSteps } from './wizard-steps/ConfigureSteps';
 import { FormStep } from './wizard-steps/FormStep';
@@ -18,7 +17,6 @@ interface NewCampaignModalProps {
 }
 
 const WIZARD_STEPS = [
-  { id: 'template', label: 'Seleccionar template' },
   { id: 'basic', label: 'Información básica' },
   { id: 'steps', label: 'Configurar pasos' },
   { id: 'form', label: 'Formulario de evaluación' },
@@ -32,8 +30,7 @@ interface Question {
 }
 
 export function NewCampaignModal({ isOpen, onClose, onCampaignCreated }: NewCampaignModalProps) {
-  const [currentStep, setCurrentStep] = useState('template');
-  const [selectedTemplate, setSelectedTemplate] = useState<CampaignTemplate | null>(null);
+  const [currentStep, setCurrentStep] = useState('basic');
   const [campaignSteps, setCampaignSteps] = useState<CampaignStep[]>([]);
   const [editingStep, setEditingStep] = useState<CampaignStep | null>(null);
   const [formQuestions, setFormQuestions] = useState<Question[]>([
@@ -56,19 +53,6 @@ export function NewCampaignModal({ isOpen, onClose, onCampaignCreated }: NewCamp
       selection: ''
     }
   });
-
-  const handleTemplateSelect = (template: CampaignTemplate | null) => {
-    setSelectedTemplate(template);
-    if (template) {
-      // Ensure each step has a unique ID
-      const stepsWithIds = template.steps.map(step => ({
-        ...step,
-        id: uuidv4()
-      }));
-      setCampaignSteps(stepsWithIds);
-    }
-    setCurrentStep('basic');
-  };
 
   const handleStepEdit = (stepId: string) => {
     const step = campaignSteps.find(s => s.id === stepId);
@@ -93,7 +77,6 @@ export function NewCampaignModal({ isOpen, onClose, onCampaignCreated }: NewCamp
 
       const newCampaign: Omit<Campaign, 'id'> = {
         ...formData,
-        template: selectedTemplate || undefined,
         steps: campaignSteps,
         status: 'draft',
         metrics: {
@@ -169,9 +152,6 @@ export function NewCampaignModal({ isOpen, onClose, onCampaignCreated }: NewCamp
           </div>
 
           <div className="flex-1 overflow-y-auto p-6">
-            {currentStep === 'template' && (
-              <SelectTemplate onSelect={handleTemplateSelect} />
-            )}
             {currentStep === 'basic' && (
               <BasicInfoStep
                 formData={formData}
