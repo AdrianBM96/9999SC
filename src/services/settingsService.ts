@@ -1,6 +1,7 @@
 import { db } from '../firebase';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { auth } from '../firebase';
+import { generateLinkedInAuthLink } from './unileap';
 
 interface CalendarConnection {
   connected: boolean;
@@ -37,57 +38,31 @@ class SettingsService {
   }
 
   async connectLinkedIn(): Promise<void> {
-    // Open LinkedIn OAuth popup
-    const width = 600;
-    const height = 700;
-    const left = window.screen.width / 2 - width / 2;
-    const top = window.screen.height / 2 - height / 2;
-
-    const apiUrl = import.meta.env.VITE_API_URL;
-    if (!apiUrl) {
-      throw new Error('API URL not configured. Please check your environment variables.');
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error('No user logged in');
     }
 
-    const popup = window.open(
-      `${apiUrl}/auth/linkedin`,
-      'LinkedIn Login',
-      `width=${width},height=${height},left=${left},top=${top}`
-    );
+    try {
+      // Generate Unileap auth link
+      const authUrl = await generateLinkedInAuthLink(user.uid);
+      
+      // Open in a new window
+      const width = 600;
+      const height = 700;
+      const left = window.screen.width / 2 - width / 2;
+      const top = window.screen.height / 2 - height / 2;
 
-    if (popup) {
-      return new Promise((resolve, reject) => {
-        const messageHandler = async (event: MessageEvent) => {
-          if (event.origin !== apiUrl) return;
-          if (event.data.type === 'linkedin_auth') {
-            window.removeEventListener('message', messageHandler);
-            popup.close();
-            if (event.data.success) {
-              const settingsRef = await this.getUserSettingsRef();
-              await updateDoc(settingsRef, {
-                linkedIn: {
-                  connected: true,
-                  accessToken: event.data.accessToken,
-                  refreshToken: event.data.refreshToken,
-                  expiresAt: event.data.expiresAt,
-                },
-              });
-              resolve();
-            } else {
-              reject(new Error('LinkedIn authentication failed'));
-            }
-          }
-        };
+      window.open(
+        authUrl,
+        'Unileap LinkedIn Auth',
+        `width=${width},height=${height},left=${left},top=${top}`
+      );
 
-        window.addEventListener('message', messageHandler);
-        // Add timeout to clean up if the popup is closed without completing
-        const checkClosed = setInterval(() => {
-          if (popup.closed) {
-            clearInterval(checkClosed);
-            window.removeEventListener('message', messageHandler);
-            reject(new Error('Authentication window was closed'));
-          }
-        }, 1000);
-      });
+      // The success/failure will be handled by the redirect URLs configured in generateLinkedInAuthLink
+    } catch (error) {
+      console.error('Error connecting LinkedIn:', error);
+      throw new Error('Failed to initiate LinkedIn connection');
     }
   }
 
