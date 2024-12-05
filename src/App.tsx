@@ -19,7 +19,7 @@ import { IntegrationsSettings } from './components/settings/IntegrationsSettings
 import { Login } from './components/Login';
 import { PublicPage } from './components/public/PublicPage';
 import { Campaigns } from './components/campaigns/Campaigns';
-import CampaignCreationForm from './components/campaigns/CampaignCreationForm';
+import { NewCampaignForm } from './components/campaigns/NewCampaignForm';
 
 import { auth } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -59,7 +59,7 @@ function App() {
                     <Routes>
                       <Route path="/" element={<Dashboard />} />
                       <Route path="/campaigns" element={<Campaigns />} />
-                      <Route path="/campaigns/create" element={<CampaignCreationForm />} />
+                      <Route path="/campaigns/create" element={<NewCampaignForm />} />
                       <Route path="/candidatures" element={<Candidatures />} />
                       <Route path="/candidates" element={<CandidateSearch />} />
                       <Route path="/forms" element={<FormsList />} />
