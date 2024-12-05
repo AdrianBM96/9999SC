@@ -34,6 +34,7 @@ export function Header({ user, showRecruitmentMenu }: HeaderProps) {
     { path: '/settings/accounts', label: 'Cuentas conectadas' },
     { path: '/settings/calendar', label: 'Calendario' },
     { path: '/settings/notifications', label: 'Notificaciones' },
+    { path: '/settings/integrations', label: 'Integraciones' },
   ];
 
   return (
