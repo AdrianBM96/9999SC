@@ -17,14 +17,14 @@ export async function saveOpenAIConfig(user: User, config: OpenAIConfig): Promis
       await updateDoc(userConfigRef, {
         openai: {
           apiKey: config.apiKey,
-          orgId: config.orgId
+          ...(config.orgId ? { orgId: config.orgId } : {})
         }
       });
     } else {
       await setDoc(userConfigRef, {
         openai: {
           apiKey: config.apiKey,
-          orgId: config.orgId
+          ...(config.orgId ? { orgId: config.orgId } : {})
         }
       });
     }
