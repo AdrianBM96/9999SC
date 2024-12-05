@@ -9,7 +9,8 @@ if (!apiKey) {
 
 export const openai = new OpenAI({
   apiKey: apiKey,
-  organization: import.meta.env.VITE_OPENAI_ORG_ID // Opcional
+  organization: import.meta.env.VITE_OPENAI_ORG_ID, // Opcional
+  dangerouslyAllowBrowser: true // Permitir uso en el navegador
 });
 
 // Función auxiliar para manejar errores de la API
