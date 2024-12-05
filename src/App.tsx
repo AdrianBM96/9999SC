@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Route, Routes, createRoutesFromElements, Outlet } from 'react-router-dom';
+import { routerConfig } from './router/config';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { Dashboard } from './components/dashboard/Dashboard';
@@ -39,53 +40,55 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  return (
-    <Router>
-      <Routes>
+  const AppLayout = () => (
+  <div className="flex h-screen bg-gray-50">
+    <Sidebar 
+      activeTab={activeTab} 
+      setActiveTab={setActiveTab}
+      setShowRecruitmentMenu={setShowRecruitmentMenu}
+    />
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <Header user={user} showRecruitmentMenu={showRecruitmentMenu} />
+      <main className="flex-1 overflow-x-hidden overflow-y-auto">
+        <Outlet />
+      </main>
+    </div>
+  </div>
+);
+
+const router = createBrowserRouter(
+    createRoutesFromElements(
+      <>
         <Route path="/company/:companyId" element={<PublicPage />} />
-        <Route
-          path="*"
-          element={
-            user ? (
-              <div className="flex h-screen bg-gray-50">
-                <Sidebar 
-                  activeTab={activeTab} 
-                  setActiveTab={setActiveTab}
-                  setShowRecruitmentMenu={setShowRecruitmentMenu}
-                />
-                <div className="flex-1 flex flex-col overflow-hidden">
-                  <Header user={user} showRecruitmentMenu={showRecruitmentMenu} />
-                  <main className="flex-1 overflow-x-hidden overflow-y-auto">
-                    <Routes>
-                      <Route path="/" element={<Dashboard />} />
-                      <Route path="/campaigns" element={<Campaigns />} />
-                      <Route path="/campaigns/create" element={<NewCampaignForm />} />
-                      <Route path="/candidatures" element={<Candidatures />} />
-                      <Route path="/candidates" element={<CandidateSearch />} />
-                      <Route path="/forms" element={<FormsList />} />
-                      <Route path="/hiring" element={<HiringList />} />
-                      <Route path="/linkedin-inbox" element={<LinkedInInbox />} />
-                      <Route path="/interviews" element={<Interviews />} />
-                      <Route path="/settings" element={<SettingsLayout />}>
-                        <Route index element={<ProfileSettings />} />
-                        <Route path="profile" element={<ProfileSettings />} />
-                        <Route path="accounts" element={<AccountsSettings />} />
-                        <Route path="calendar" element={<CalendarSettings />} />
-                        <Route path="notifications" element={<NotificationsSettings />} />
-                        <Route path="integrations" element={<IntegrationsSettings />} />
-                      </Route>
-                    </Routes>
-                  </main>
-                </div>
-              </div>
-            ) : (
-              <Login />
-            )
-          }
-        />
-      </Routes>
+        <Route path="/" element={user ? <AppLayout /> : <Login />}>
+          <Route index element={<Dashboard />} />
+          <Route path="campaigns" element={<Campaigns />} />
+          <Route path="campaigns/create" element={<NewCampaignForm />} />
+          <Route path="candidatures" element={<Candidatures />} />
+          <Route path="candidates" element={<CandidateSearch />} />
+          <Route path="forms" element={<FormsList />} />
+          <Route path="hiring" element={<HiringList />} />
+          <Route path="linkedin-inbox" element={<LinkedInInbox />} />
+          <Route path="interviews" element={<Interviews />} />
+          <Route path="settings" element={<SettingsLayout />}>
+            <Route index element={<ProfileSettings />} />
+            <Route path="profile" element={<ProfileSettings />} />
+            <Route path="accounts" element={<AccountsSettings />} />
+            <Route path="calendar" element={<CalendarSettings />} />
+            <Route path="notifications" element={<NotificationsSettings />} />
+            <Route path="integrations" element={<IntegrationsSettings />} />
+          </Route>
+        </Route>
+      </>
+    ),
+    routerConfig
+  );
+
+  return (
+    <>
+      <RouterProvider router={router} />
       <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
-    </Router>
+    </>
   );
 }
 

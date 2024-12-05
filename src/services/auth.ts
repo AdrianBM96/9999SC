@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
+import { User } from 'firebase/auth';
+import { auth } from '../firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 interface AuthState {
     isAuthenticated: boolean;
-    user: any | null;
+    user: User | null;
 }
 
 export function useAuth() {
@@ -12,20 +15,14 @@ export function useAuth() {
     });
 
     useEffect(() => {
-        // Add your authentication logic here
-        // This is a basic implementation
-        const checkAuth = () => {
-            // Replace with your actual auth check logic
-            const token = localStorage.getItem('auth_token');
-            if (token) {
-                setAuthState({
-                    isAuthenticated: true,
-                    user: { token }
-                });
-            }
-        };
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            setAuthState({
+                isAuthenticated: !!user,
+                user
+            });
+        });
 
-        checkAuth();
+        return () => unsubscribe();
     }, []);
 
     return authState;
