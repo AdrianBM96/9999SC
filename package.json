@@ -15,7 +15,7 @@
     "@types/uuid": "^10.0.0",
     "axios": "^1.7.9",
     "clsx": "^2.1.1",
-    "firebase": "^9.22.0",
+    "firebase": "^9.23.0",
     "lucide-react": "^0.344.0",
     "openai": "^4.68.1",
     "pdfjs-dist": "3.11.174",
