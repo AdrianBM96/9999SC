@@ -1,5 +1,5 @@
 import { getConfig } from './config';
-import { db } from './firebase';
+import { db } from '../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 
 interface HostedAuthResponse {
