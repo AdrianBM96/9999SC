@@ -1,4 +1,4 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth, browserLocalPersistence, setPersistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
@@ -14,21 +14,30 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase and services only once
+const getFirebaseApp = () => {
+  try {
+    return getApp();
+  } catch {
+    return initializeApp(firebaseConfig);
+  }
+};
+
+const app = getFirebaseApp();
 const analytics = getAnalytics(app);
 const auth = getAuth(app);
-setPersistence(auth, browserLocalPersistence)
-  .then(() => {
-    console.log('Firebase persistence set to LOCAL');
-  })
-  .catch((error) => {
-    console.error('Error setting persistence:', error);
-  });
-
-auth.onAuthStateChanged((user) => {
-  console.log('Firebase Auth State Changed:', user ? `User: ${user.uid}` : 'No user');
-});
 const db = getFirestore(app);
 const storage = getStorage(app);
+
+// Set persistence only if not already set
+if (!auth.currentUser) {
+  setPersistence(auth, browserLocalPersistence)
+    .then(() => {
+      console.log('Firebase persistence set to LOCAL');
+    })
+    .catch((error) => {
+      console.error('Error setting persistence:', error);
+    });
+}
 
 export { app, analytics, auth, db, storage };
