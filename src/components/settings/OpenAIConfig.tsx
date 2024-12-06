@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../services/auth';
 import { saveOpenAIConfig, getOpenAIConfig } from '../../services/openaiConfig';
-import { getConfig } from '../../services/config';
+import { getConfig } from '@/config';
 
 export function OpenAIConfig() {
   const { user, isAuthenticated } = useAuth();

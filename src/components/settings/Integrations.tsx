@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { validateIntegrations, updateUnipileConfig, getConfig } from '../../services/config';
+import { validateIntegrations, updateUnipileConfig, getConfig } from '@/config';
 import { AlertCircle, CheckCircle, XCircle, Globe, Link as LinkIcon, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { getLinkedInAccounts } from '../../services/linkedin-integration';
