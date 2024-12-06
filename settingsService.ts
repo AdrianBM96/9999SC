@@ -4,12 +4,10 @@ export class SettingsService {
     private static instance: SettingsService;
     private apiUrl: string;
     private apiKey: string;
-    private accountId: string;
 
     private constructor() {
         this.apiUrl = import.meta.env.VITE_UNILEAP_API_URL;
         this.apiKey = import.meta.env.VITE_UNILEAP_API_KEY;
-        this.accountId = import.meta.env.VITE_UNIPILE_ACCOUNT_ID;
     }
 
     public static getInstance(): SettingsService {
@@ -33,7 +31,7 @@ export class SettingsService {
     }
 
     public async disconnectLinkedIn(): Promise<void> {
-        if (!this.apiUrl || !this.apiKey || !this.accountId) {
+        if (!this.apiUrl || !this.apiKey) {
             throw new Error('Unileap configuration is missing');
         }
 
@@ -43,10 +41,7 @@ export class SettingsService {
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${this.apiKey}`
-                },
-                body: JSON.stringify({
-                    accountId: this.accountId
-                })
+                }
             });
 
             if (!response.ok) {

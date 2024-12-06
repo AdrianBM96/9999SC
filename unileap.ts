@@ -2,12 +2,11 @@ import { UnipileConfig } from './types';
 
 const UNILEAP_CONFIG = {
     apiUrl: import.meta.env.VITE_UNILEAP_API_URL,
-    apiKey: import.meta.env.VITE_UNILEAP_API_KEY,
-    accountId: import.meta.env.VITE_UNIPILE_ACCOUNT_ID
+    apiKey: import.meta.env.VITE_UNILEAP_API_KEY
 };
 
 export const generateLinkedInAuthLink = async () => {
-    if (!UNILEAP_CONFIG.apiUrl || !UNILEAP_CONFIG.apiKey || !UNILEAP_CONFIG.accountId) {
+    if (!UNILEAP_CONFIG.apiUrl || !UNILEAP_CONFIG.apiKey) {
         throw new Error('Unileap configuration is missing');
     }
 
@@ -19,7 +18,6 @@ export const generateLinkedInAuthLink = async () => {
                 'Authorization': `Bearer ${UNILEAP_CONFIG.apiKey}`
             },
             body: JSON.stringify({
-                accountId: UNILEAP_CONFIG.accountId,
                 redirectUrl: window.location.origin + '/settings/accounts'
             })
         });
@@ -34,4 +32,4 @@ export const generateLinkedInAuthLink = async () => {
         console.error('Error generating LinkedIn auth link:', error);
         throw error;
     }
-};
+}

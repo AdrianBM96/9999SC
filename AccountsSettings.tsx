@@ -19,7 +19,7 @@ const AccountsSettings: React.FC<AccountsSettingsProps> = ({ onSuccess, onError 
     const checkConnectionStatus = async () => {
         try {
             const response = await fetch(
-                `${import.meta.env.VITE_UNILEAP_API_URL}/v1/oauth/linkedin/status?accountId=${import.meta.env.VITE_UNIPILE_ACCOUNT_ID}`,
+                `${import.meta.env.VITE_UNILEAP_API_URL}/v1/oauth/linkedin/status`,
                 {
                     method: 'GET',
                     headers: {
