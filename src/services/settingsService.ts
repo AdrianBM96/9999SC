@@ -1,6 +1,5 @@
-import { db } from '../firebase';
+import { db, auth } from '@/firebase';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { auth } from '../firebase';
 import { generateLinkedInAuthLink } from './unileap';
 
 interface CalendarConnection {

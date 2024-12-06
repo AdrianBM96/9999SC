@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '@/firebase';
 
 const DOCUSIGN_API_URL = 'https://demo.docusign.net/restapi/v2.1';
 const DOCUSIGN_INTEGRATION_KEY = import.meta.env.VITE_DOCUSIGN_INTEGRATION_KEY;

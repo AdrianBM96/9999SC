@@ -1,5 +1,5 @@
 import { collection, addDoc, updateDoc, doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '@/firebase';
 import { HiringProcess, DocumentTemplate, OnboardingTask } from '../types';
 import { createEnvelope, getEnvelopeStatus, updateDocumentStatus } from './docusignService';
 

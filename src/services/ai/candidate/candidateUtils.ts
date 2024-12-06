@@ -1,5 +1,5 @@
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../../../firebase';
+import { db } from '@/firebase';
 import { Candidate, Candidature } from '../../../types/campaign';
 
 export async function fetchCandidatesForCandidature(candidatureId: string, candidatures: Candidature[]): Promise<Candidate[]> {

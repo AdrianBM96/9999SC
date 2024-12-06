@@ -23,7 +23,7 @@ import { PublicPage } from './components/public/PublicPage';
 import { Campaigns } from './components/campaigns/Campaigns';
 import { NewCampaignForm } from './components/campaigns/NewCampaignForm';
 
-import { auth } from './firebase';
+import { auth } from '@/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
