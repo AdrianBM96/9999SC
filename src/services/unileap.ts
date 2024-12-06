@@ -1,4 +1,4 @@
-import { getConfig } from './config';
+import { getConfig } from '@/config';
 import { db } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 
